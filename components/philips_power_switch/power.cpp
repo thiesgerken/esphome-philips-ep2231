@@ -42,10 +42,9 @@ namespace esphome
 
                     mainboard_uart_->flush();
 
-                    // Perform power trip (invert state twice)
-                    power_pin_->digital_write(!power_pin_->digital_read());
+                    power_pin_->digital_write(0);
                     delay(POWER_TRIP_DELAY);
-                    power_pin_->digital_write(!power_pin_->digital_read());
+                    power_pin_->digital_write(1);
                 }
                 else
                 {
