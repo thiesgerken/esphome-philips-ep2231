@@ -60,7 +60,7 @@ Button|Message|
 Espresso| `D5 55 00 01 02 00 02 02 00 00 09 2D`
 Hot Water|`D5 55 00 01 02 00 02 04 00 00 21 01`
 coffee|`D5 55 00 01 02 00 02 08 00 00 39 1C`
-steam|`D5 55 00 01 02 00 02 10 00 00 09 26`
+cappuccino|`D5 55 00 01 02 00 02 10 00 00 09 26`
 
 ### Settings buttons
 
@@ -100,7 +100,7 @@ The following table show the purpose of each byte and their known states
 | 3    | Espresso-LED      | `03`/`07` - half/full brightness ; `38` - 2x espresso |
 | 4    | Hot Water-LED     | `03`/`07` - half/full brightness                      |
 | 5    | Coffee-LED        | `03`/`07` - half/full brightness; `38` - 2x coffee    |
-| 6    | Steam-LED         | `03`/`07` - half/full brightness                      |
+| 6    | Cappuccino-LED    | `03`/`07` - half/full brightness                      |
 | 7    |                   | unknown                                               |
 | 8    | Bean-LED          | `00` - 1 LED; `38` - 2 LEDs; `3F` - 3 LEDs            |
 | 9    | Bean-LED          | `07` - show led group; `38` - powder selected         |

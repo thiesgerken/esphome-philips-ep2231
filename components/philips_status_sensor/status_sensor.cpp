@@ -85,11 +85,11 @@ namespace esphome
                     return;
                 }
 
-                // Steam selected
+                // Cappuccino selected
                 if (data[3] == 0x00 && data[4] == 0x00 && data[5] == 0x00 && data[6] == 0x07)
                 {
                     if (millis() - play_pause_last_change_ < BLINK_THRESHOLD)
-                        update_state("Steam selected");
+                        update_state("Cappuccino selected");
                     else
                         update_state("Busy");
                     return;
