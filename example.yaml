@@ -48,12 +48,12 @@ button:
 
   - platform: philips_action_button
     controller_id: philip
-    action: SELECT_HOT_WATER
+    action: HOT_WATER
     name: "Select Hot Water"
     icon: mdi:tea
 
   - platform: philips_action_button
     controller_id: philip
-    action: PLAY_PAUSE
+    action: START_STOP
     name: "Select play/pause"
     icon: mdi:play-pause

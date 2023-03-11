@@ -30,7 +30,7 @@ A example configuration can be found [here](example.yaml)
 ## Philips Action Button
 
 - **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
-- **action**(**Required**, int): The action performed by this button. Select one of `SELECT_COFFEE`, `SELECT_ESPRESSO`, `SELECT_HOT_WATER`, `SELECT_CAPPUCCINO`, `BEAN`, `SIZE`, `AQUA_CLEAN`, `CALC_CLEAN`, `PLAY_PAUSE`.
+- **action**(**Required**, int): The action performed by this button. Select one of `COFFEE`, `ESPRESSO`, `HOT_WATER`, `CAPPUCCINO`, `BEANS`, `SIZE`, `AQUA_CLEAN`, `CALC_CLEAN`, `START_STOP`.
 - All other options from [Button](https://esphome.io/components/button/index.html#config-button)
 
 ## Philips Status Sensor

@@ -2,21 +2,20 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import switch
 from esphome.const import CONF_ID
-from ..philips_series_2200 import CONTROLLER_ID, PhilipsSeries2200
+from .. import CONTROLLER_ID, PhilipsSeries2200, philips_series_2200_ns
 
 DEPENDENCIES = ['philips_series_2200']
 
 CLEAN_DURING_START = 'clean'
 
-power_switch_namespace = cg.esphome_ns.namespace(
-    'philips_series_2200').namespace("philips_power_switch")
+power_switch_namespace = philips_series_2200_ns.namespace("philips_power_switch")
 PowerSwitch = power_switch_namespace.class_(
     'Power', switch.Switch, cg.Component)
 
 CONFIG_SCHEMA = switch.SWITCH_SCHEMA.extend({
     cv.GenerateID(): cv.declare_id(PowerSwitch),
     cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
-    cv.Optional(CLEAN_DURING_START, default=True): cv.boolean
+    cv.Optional(CLEAN_DURING_START, default=True): cv.boolean # type: ignore
 }).extend(cv.COMPONENT_SCHEMA)
 
 

@@ -4,8 +4,6 @@
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/uart/uart.h"
 
-// Feel free to lower this, you might get some invalid intermittent state though
-#define REPEAT_REQUIREMENT 30
 #define BLINK_THRESHOLD 750
 
 namespace esphome
@@ -14,6 +12,36 @@ namespace esphome
     {
         namespace philips_status_sensor
         {
+            enum BeverageLedStatus {
+                OFF = 0,
+                HALF_BRIGHTNESS,
+                FULL_BRIGHTNESS,
+                TWO_DRINKS,
+
+            };
+
+            std::string format_beverage_status(BeverageLedStatus status);
+
+            enum SettingLedStatus {
+                LEVEL_0 = 0,
+                LEVEL_1,
+                LEVEL_2,
+                LEVEL_3,
+            };
+
+            enum StatusType {
+                OVERALL = 0,
+                LED_ESPRESSO,
+                LED_HOT_WATER,
+                LED_COFFEE,
+                LED_CAPPUCCINO,
+                LED_BEANS,
+                LED_SIZE,
+                LED_POWDER,
+                LED_WATER_EMPTY,
+                LED_WASTE,
+                LED_START_STOP
+            };
 
             /**
              * @brief Reports status of the coffee machine
@@ -39,14 +67,23 @@ namespace esphome
                 };
 
                 /**
+                 * @brief Set the type of stuff that is reported by this sensor.
+                 *
+                 * @param tp
+                 */
+                void set_type(StatusType status_type) { status_type_ = status_type; };
+
+                /**
                  * @brief Published the state if it's different form the currently published state.
                  *
                  */
                 void update_state(const std::string &state)
                 {
+                    size_t repeat_requirement = status_type_ == StatusType::OVERALL ? 30 : 2;
+
                     if (state == new_state_)
                     {
-                        if (new_state_counter_ >= REPEAT_REQUIREMENT)
+                        if (new_state_counter_ >= repeat_requirement)
                         {
                             if (this->state != state)
                                 publish_state(state);
@@ -70,11 +107,27 @@ namespace esphome
                 /// @brief cache for counting new messages
                 std::string new_state_ = "";
 
-                /// @brief status of the play/pause led
-                bool play_pause_led_ = false;
-
                 /// @brief time of play/pause change
-                long play_pause_last_change_ = 0;
+                long start_stop_last_change_ = 0;
+
+                bool led_start_stop_ = false;
+                bool led_waste_full_ = false;
+                bool led_powder_ = false;
+                bool led_water_empty_ = false;
+                bool led_error_ = false;
+
+                // TODO: add aqua clean & calcnclean
+
+                BeverageLedStatus led_espresso_ = BeverageLedStatus::OFF;
+                BeverageLedStatus led_hot_water_ = BeverageLedStatus::OFF;
+                BeverageLedStatus led_coffee_ = BeverageLedStatus::OFF;
+                BeverageLedStatus led_cappuccino_ = BeverageLedStatus::OFF;
+
+                SettingLedStatus led_beans_ = SettingLedStatus::LEVEL_0;
+                SettingLedStatus led_size_ = SettingLedStatus::LEVEL_0;
+
+                StatusType status_type_ = StatusType::OVERALL;
+
             };
         } // namespace philips_status_sensor
     }     // namespace philips_series_2200

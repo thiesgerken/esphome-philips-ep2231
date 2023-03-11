@@ -20,15 +20,15 @@ namespace esphome
              */
             enum Action
             {
-                SELECT_COFFEE = 0,
-                SELECT_ESPRESSO,
-                SELECT_HOT_WATER,
-                SELECT_CAPPUCCINO,
-                SELECT_BEAN,
-                SELECT_SIZE,
-                SELECT_AQUA_CLEAN,
-                SELECT_CALC_CLEAN,
-                PLAY_PAUSE,
+                COFFEE = 0,
+                ESPRESSO,
+                HOT_WATER,
+                CAPPUCCINO,
+                BEANS,
+                SIZE,
+                AQUA_CLEAN,
+                CALC_CLEAN,
+                START_STOP,
             };
 
             /**

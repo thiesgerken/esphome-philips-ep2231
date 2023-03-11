@@ -2,9 +2,9 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"
-#include "../philips_power_switch/power.h"
-#include "../philips_action_button/action_button.h"
-#include "../philips_status_sensor/status_sensor.h"
+#include "./switch/power.h"
+#include "./button/action_button.h"
+#include "./text_sensor/status_sensor.h"
 
 #define POWER_STATE_TIMEOUT 100
 
@@ -80,7 +80,6 @@ namespace esphome
             /// @brief pin connect to display panel power transistor/mosfet
             GPIOPin *power_pin_;
             /// @brief power switch reference
-            // TODO: allow multiple power_switches
             std::vector<philips_power_switch::Power *> power_switches_;
 
             /// @brief list of status sensors to update with messages

@@ -68,7 +68,7 @@ The 9th byte is used to transmit the right hand side button group in a similar f
 
 | Button     | Message                               |
 | ---------- | ------------------------------------- |
-| Bean       | `D5 55 00 01 02 00 02 00 02 00 09 2F` |
+| Beans      | `D5 55 00 01 02 00 02 00 02 00 09 2F` |
 | Size       | `D5 55 00 01 02 00 02 00 04 00 20 05` |
 | Aqua clean | `D5 55 00 01 02 00 02 00 10 00 0D 36` |
 | Calc clean | `D5 55 00 01 02 00 02 00 20 00 28 37` |
@@ -81,7 +81,7 @@ The 9th byte is used to transmit the right hand side button group in a similar f
 
 This should be possible but determining the correct checksum is required.
 
-## Messages from the display to the mainboard
+## Messages from the mainboard to the display
 
 All messages have the following structure:
 
@@ -102,16 +102,17 @@ The following table show the purpose of each byte and their known states
 | 5    | Coffee-LED        | `03`/`07` - half/full brightness; `38` - 2x coffee    |
 | 6    | Cappuccino-LED    | `03`/`07` - half/full brightness                      |
 | 7    |                   | unknown                                               |
-| 8    | Bean-LED          | `00` - 1 LED; `38` - 2 LEDs; `3F` - 3 LEDs            |
-| 9    | Bean-LED          | `07` - show led group; `38` - powder selected         |
+| 8    | Beans-LED         | `00` - 1 LED; `38` - 2 LEDs; `3F` - 3 LEDs            |
+| 9    | Beans-LED         | `07` - show led group; `38` - powder selected         |
 | 10   | Size-LED          | `00` - 1 LED; `38` - 2 LEDs; `3F` - 3 LEDs            |
 | 11   | Size-LED          | `07` - show led group                                 |
 | 12   |                   | probably aqua_clean/calc_clean                        |
 | 13   |                   | probably aqua_clean/calc_clean                        |
-| 14   | Waste&Warning-LED | `07` - waste; `38` - warning sign                     |
-| 15   | Play/Pause-LED    | `07` - on                                             |
-| 16   | checksum          |
+| 14   | Water Empty       | `38` - water                     |
+| 15   | Waste&Warning-LED | `07` - waste; `38` - warning sign                     |
+| 16   | Play/Pause-LED    | `07` - on                                             |
 | 17   | checksum          |
+| 18   | checksum          |
 
 ## Off LED states
 
