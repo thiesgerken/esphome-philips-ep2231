@@ -22,7 +22,7 @@ namespace esphome
             {
                 SELECT_COFFEE = 0,
                 SELECT_ESPRESSO,
-                SELECT_CAPPUCCINO,
+                SELECT_HOT_WATER,
                 SELECT_STEAM,
                 SELECT_BEAN,
                 SELECT_SIZE,
