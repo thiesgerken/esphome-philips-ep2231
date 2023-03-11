@@ -29,6 +29,16 @@ namespace esphome
 
                 mainboard_uart_.write_array(buffer, size);
                 last_message_from_display_time_ = millis();
+
+                if (size == 12 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
+                    std::string res = "Display -> Mainboard: ";
+                    char buf[5];
+                    for (size_t i = 0; i < size; i++) {
+                        sprintf(buf, "%02X ", buffer[i]);
+                        res += buf;
+                    }
+                    ESP_LOGD(TAG, res.c_str());
+                }
             }
 
             // Read until start index
@@ -47,6 +57,16 @@ namespace esphome
                 mainboard_uart_.read_array(buffer, size);
 
                 display_uart_.write_array(buffer, size);
+
+                if (size == 19 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
+                    std::string res = "Mainboard -> Display: ";
+                    char buf[5];
+                    for (size_t i = 0; i < size; i++) {
+                        sprintf(buf, "%02X ", buffer[i]);
+                        res += buf;
+                    }
+                    ESP_LOGD(TAG, res.c_str());
+                }
 
                 // Update status sensors
                 for (philips_status_sensor::StatusSensor *status_sensor : status_sensors_)
