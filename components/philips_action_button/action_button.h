@@ -21,13 +21,9 @@ namespace esphome
             enum Action
             {
                 SELECT_COFFEE = 0,
-                MAKE_COFFEE,
                 SELECT_ESPRESSO,
-                MAKE_ESPRESSO,
                 SELECT_HOT_WATER,
-                MAKE_HOT_WATER,
                 SELECT_STEAM,
-                MAKE_STEAM,
                 SELECT_BEAN,
                 SELECT_SIZE,
                 SELECT_AQUA_CLEAN,
