@@ -21,7 +21,7 @@ namespace esphome
             void StatusSensor::update_status(uint8_t *data, size_t len)
             {
                 // reject invalid messages
-                if (len < 19 && data[0] != 0xD5 && data[1] != 0x55)
+                if (len != 19 || data[0] != 0xD5 || data[1] != 0x55)
                     return;
 
                 // TODO: figure out how the checksum is calculated and only parse valid messages
