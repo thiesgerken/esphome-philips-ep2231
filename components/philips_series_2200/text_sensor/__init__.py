@@ -23,8 +23,9 @@ STATUS_TYPES = {
     "led_size": StatusType.LED_SIZE,
     "led_powder": StatusType.LED_POWDER,
     "led_water_empty": StatusType.LED_WATER_EMPTY,
-    "led_waste": StatusType.LED_WASTE,
-    "led_start_stop": StatusType.LED_START_STOP
+    "led_waste_full": StatusType.LED_WASTE_FULL,
+    "led_start_stop": StatusType.LED_START_STOP,
+    "led_error": StatusType.LED_ERROR,
 }
 
 CONFIG_SCHEMA = text_sensor.TEXT_SENSOR_SCHEMA.extend(
@@ -42,4 +43,5 @@ async def to_code(config):
     await cg.register_component(var, config)
     await text_sensor.register_text_sensor(var, config)
 
+    cg.add(var.set_type(config[CONF_STATUS_TYPE]))
     cg.add(parent.add_status_sensor(var))

@@ -108,7 +108,7 @@ The following table show the purpose of each byte and their known states
 | 11   | Size-LED          | `07` - show led group                                 |
 | 12   |                   | probably aqua_clean/calc_clean                        |
 | 13   |                   | probably aqua_clean/calc_clean                        |
-| 14   | Water Empty       | `38` - water                     |
+| 14   | Water Empty       | `38` - water                                          |
 | 15   | Waste&Warning-LED | `07` - waste; `38` - warning sign                     |
 | 16   | Play/Pause-LED    | `07` - on                                             |
 | 17   | checksum          |
