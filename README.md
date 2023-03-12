@@ -20,6 +20,7 @@ You might break/brick your coffee machine by modifying it in any way, shape or f
 - figure out how to go back to the main menu from drink selection
 - integrate calc'n'clean & descaling LED status, and properly test the actions
 - figure out how the checksum calculation works in order to discard invalid messages
+- if someone else wants to use this: proper i18n; the status texts are localized to german at the moment (because that's the way I like to have it in the HA UI)
 
 ## Configuration variables
 
