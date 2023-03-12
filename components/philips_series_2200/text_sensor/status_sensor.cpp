@@ -81,6 +81,7 @@ std::string StatusSensor::format_beverage_selection(std::string beverage) {
 }
 
 std::string StatusSensor::format_overall_status() {
+
   if (status_.led_espresso == BeverageLedStatus::FULL_BRIGHTNESS &&
       status_.led_hot_water == BeverageLedStatus::FULL_BRIGHTNESS &&
       status_.led_coffee == BeverageLedStatus::FULL_BRIGHTNESS &&
@@ -94,6 +95,11 @@ std::string StatusSensor::format_overall_status() {
 
     return "Bereit";
   }
+
+  if (status_.led_start_stop &&
+      millis() - start_stop_last_change_ >= BLINK_THRESHOLD)
+    return "Zubereitung";
+
   if (status_.led_espresso == BeverageLedStatus::HALF_BRIGHTNESS ||
       status_.led_hot_water == BeverageLedStatus::HALF_BRIGHTNESS ||
       status_.led_coffee == BeverageLedStatus::HALF_BRIGHTNESS ||
@@ -104,45 +110,50 @@ std::string StatusSensor::format_overall_status() {
       return "Spült";
     return "Vorbereitung";
   }
+
   if (status_.led_water_empty)
     return "Wasser leer";
   if (status_.led_waste_full)
     return "Trester voll";
   if (status_.led_error)
     return "Fehler";
+
   if (status_.led_espresso == BeverageLedStatus::OFF &&
       status_.led_hot_water == BeverageLedStatus::OFF &&
       status_.led_coffee == BeverageLedStatus::FULL_BRIGHTNESS &&
       status_.led_cappuccino == BeverageLedStatus::OFF) {
-    if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
-      return format_beverage_selection("Kaffee");
-    return "Busy";
+    return format_beverage_selection("Kaffee");
   }
   if (status_.led_espresso == BeverageLedStatus::OFF &&
       status_.led_hot_water == BeverageLedStatus::OFF &&
-      status_.led_coffee == BeverageLedStatus::OFF &&
-      status_.led_cappuccino == BeverageLedStatus::FULL_BRIGHTNESS) {
-    if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
-      return format_beverage_selection("Cappuccino");
-    return "Busy";
-  }
-  if (status_.led_espresso == BeverageLedStatus::OFF &&
-      status_.led_hot_water == BeverageLedStatus::FULL_BRIGHTNESS &&
-      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_coffee == BeverageLedStatus::TWO_DRINKS &&
       status_.led_cappuccino == BeverageLedStatus::OFF) {
-    if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
-      return format_beverage_selection("Heißes Wasser");
-    return "Busy";
+    return format_beverage_selection("2x Kaffee");
   }
   if (status_.led_espresso == BeverageLedStatus::FULL_BRIGHTNESS &&
       status_.led_hot_water == BeverageLedStatus::OFF &&
       status_.led_coffee == BeverageLedStatus::OFF &&
       status_.led_cappuccino == BeverageLedStatus::OFF) {
-    if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
-      return format_beverage_selection("Espresso");
-    return "Busy";
+    return format_beverage_selection("Espresso");
   }
-
+  if (status_.led_espresso == BeverageLedStatus::TWO_DRINKS &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::OFF) {
+    return format_beverage_selection("2x Espresso");
+  }
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::FULL_BRIGHTNESS) {
+    return format_beverage_selection("Cappuccino");
+  }
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::OFF) {
+    return format_beverage_selection("Heißes Wasser");
+  }
   return "Unbekannt";
 }
 

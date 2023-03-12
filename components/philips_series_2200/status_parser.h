@@ -4,8 +4,6 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 
-#define BLINK_THRESHOLD 750
-
 namespace esphome {
 namespace philips_series_2200 {
 enum BeverageLedStatus {
