@@ -1,5 +1,8 @@
 # ESPHome Smart Coffee (Philips Series 2200)
 
+Forked from <https://github.com/TillFleisch/ESPHome-Philips-Smart-Coffee> (Thank you for figuring out the protocol!).
+Adapted to my needs & opinions (e.g. my machine has a latte go instead of a steamer).
+
 This project integrates a Philips Series 2200 Coffee Machine into into [Home Assistant](https://home-assistant.io) through [ESPHome](https://esphome.io).
 This component has been developed on a Philips EP2220 and an ESP8266.
 
@@ -10,7 +13,15 @@ The `Power Switch` can be used to turn on the coffee machine with and without a 
 
 You might break/brick your coffee machine by modifying it in any way, shape or form. If you want to use this component, do so at your own risk.
 
-# Configuration variables
+## Ideas for Improvement
+
+- use a non-cleaning startup automatically if the machine has been turned off only for a short time period
+- long press bean button to go to powder selection
+- figure out how to go back to the main menu from drink selection
+- integrate calc'n'clean & descaling LED status, and properly test the actions
+- figure out how the checksum calculation works in order to discard invalid messages
+
+## Configuration variables
 
 A example configuration can be found [here](example.yaml)
 
