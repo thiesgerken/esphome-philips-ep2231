@@ -98,6 +98,8 @@ std::string StatusSensor::format_overall_status() {
 
   if (status_.led_start_stop &&
       millis() - start_stop_last_change_ >= BLINK_THRESHOLD)
+    // start stop led is on + did not change for a while -> it is not blinking.
+    // the machine is probably brewing a drink.
     return "Zubereitung";
 
   if (status_.led_espresso == BeverageLedStatus::HALF_BRIGHTNESS ||
