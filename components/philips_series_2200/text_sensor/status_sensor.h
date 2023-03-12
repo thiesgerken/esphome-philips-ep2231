@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../status_parser.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
@@ -9,19 +10,6 @@
 namespace esphome {
 namespace philips_series_2200 {
 namespace philips_status_sensor {
-enum BeverageLedStatus {
-  OFF = 0,
-  HALF_BRIGHTNESS,
-  FULL_BRIGHTNESS,
-  TWO_DRINKS,
-};
-
-enum SettingLedStatus {
-  LEVEL_0 = 0,
-  LEVEL_1,
-  LEVEL_2,
-  LEVEL_3,
-};
 
 enum StatusType {
   OVERALL = 0,
@@ -38,10 +26,6 @@ enum StatusType {
   LED_ERROR,
 };
 
-std::string format_beverage_status(BeverageLedStatus status);
-std::string format_setting_status(SettingLedStatus status);
-std::string format_binary_status(bool status);
-
 /**
  * @brief Reports status of the coffee machine
  */
@@ -50,6 +34,9 @@ public:
   void setup() override;
   void dump_config() override;
 
+  std::string format_beverage_status(BeverageLedStatus status);
+  std::string format_setting_status(SettingLedStatus status);
+  std::string format_binary_status(bool status);
   std::string format_beverage_selection(std::string beverage);
   std::string format_overall_status();
 
@@ -105,23 +92,9 @@ private:
   /// @brief time of play/pause change
   long start_stop_last_change_ = 0;
 
-  bool led_start_stop_ = false;
-  bool led_waste_full_ = false;
-  bool led_powder_ = false;
-  bool led_water_empty_ = false;
-  bool led_error_ = false;
-
-  // TODO: add aqua clean & calcnclean
-
-  BeverageLedStatus led_espresso_ = BeverageLedStatus::OFF;
-  BeverageLedStatus led_hot_water_ = BeverageLedStatus::OFF;
-  BeverageLedStatus led_coffee_ = BeverageLedStatus::OFF;
-  BeverageLedStatus led_cappuccino_ = BeverageLedStatus::OFF;
-
-  SettingLedStatus led_beans_ = SettingLedStatus::LEVEL_0;
-  SettingLedStatus led_size_ = SettingLedStatus::LEVEL_0;
-
   StatusType status_type_ = StatusType::OVERALL;
+
+  StatusParser status_;
 };
 } // namespace philips_status_sensor
 } // namespace philips_series_2200

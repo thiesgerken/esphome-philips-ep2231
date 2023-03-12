@@ -7,7 +7,7 @@ namespace philips_series_2200 {
 namespace philips_status_sensor {
 static const char *TAG = "philips_status_sensor";
 
-std::string format_beverage_status(BeverageLedStatus status) {
+std::string StatusSensor::format_beverage_status(BeverageLedStatus status) {
   switch (status) {
   case BeverageLedStatus::OFF:
     return "Aus";
@@ -22,14 +22,14 @@ std::string format_beverage_status(BeverageLedStatus status) {
   return "unbekannt";
 }
 
-std::string format_binary_status(bool status) {
+std::string StatusSensor::format_binary_status(bool status) {
   if (status)
     return "An";
 
   return "Aus";
 }
 
-std::string format_setting_status(SettingLedStatus status) {
+std::string StatusSensor::format_setting_status(SettingLedStatus status) {
   switch (status) {
   case SettingLedStatus::LEVEL_0:
     return "Aus";
@@ -48,7 +48,7 @@ std::string StatusSensor::format_beverage_selection(std::string beverage) {
   std::stringstream ss;
   ss << beverage << " ausgewählt (";
 
-  switch (led_size_) {
+  switch (status_.led_size) {
   case SettingLedStatus::LEVEL_1:
     ss << "klein";
     break;
@@ -62,7 +62,7 @@ std::string StatusSensor::format_beverage_selection(std::string beverage) {
     ss << "Größe unbekannt";
   }
 
-  switch (led_beans_) {
+  switch (status_.led_beans) {
   case SettingLedStatus::LEVEL_1:
     ss << " & schwach";
     break;
@@ -81,10 +81,10 @@ std::string StatusSensor::format_beverage_selection(std::string beverage) {
 }
 
 std::string StatusSensor::format_overall_status() {
-  if (led_espresso_ == BeverageLedStatus::FULL_BRIGHTNESS &&
-      led_hot_water_ == BeverageLedStatus::FULL_BRIGHTNESS &&
-      led_coffee_ == BeverageLedStatus::FULL_BRIGHTNESS &&
-      led_cappuccino_ == BeverageLedStatus::FULL_BRIGHTNESS) {
+  if (status_.led_espresso == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_hot_water == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_coffee == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_cappuccino == BeverageLedStatus::FULL_BRIGHTNESS) {
     // Check for idle state (selection led on)
 
     // selecting a beverage can result in a short "busy" period since the
@@ -94,50 +94,50 @@ std::string StatusSensor::format_overall_status() {
 
     return "Bereit";
   }
-  if (led_espresso_ == BeverageLedStatus::HALF_BRIGHTNESS ||
-      led_hot_water_ == BeverageLedStatus::HALF_BRIGHTNESS ||
-      led_coffee_ == BeverageLedStatus::HALF_BRIGHTNESS ||
-      led_cappuccino_ == BeverageLedStatus::HALF_BRIGHTNESS) {
+  if (status_.led_espresso == BeverageLedStatus::HALF_BRIGHTNESS ||
+      status_.led_hot_water == BeverageLedStatus::HALF_BRIGHTNESS ||
+      status_.led_coffee == BeverageLedStatus::HALF_BRIGHTNESS ||
+      status_.led_cappuccino == BeverageLedStatus::HALF_BRIGHTNESS) {
     // Check for rotating icons - pre heating
 
-    if (led_start_stop_)
+    if (status_.led_start_stop)
       return "Spült";
     return "Vorbereitung";
   }
-  if (led_water_empty_)
+  if (status_.led_water_empty)
     return "Wasser leer";
-  if (led_waste_full_)
+  if (status_.led_waste_full)
     return "Trester voll";
-  if (led_error_)
+  if (status_.led_error)
     return "Fehler";
-  if (led_espresso_ == BeverageLedStatus::OFF &&
-      led_hot_water_ == BeverageLedStatus::OFF &&
-      led_coffee_ == BeverageLedStatus::FULL_BRIGHTNESS &&
-      led_cappuccino_ == BeverageLedStatus::OFF) {
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_coffee == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_cappuccino == BeverageLedStatus::OFF) {
     if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
       return format_beverage_selection("Kaffee");
     return "Busy";
   }
-  if (led_espresso_ == BeverageLedStatus::OFF &&
-      led_hot_water_ == BeverageLedStatus::OFF &&
-      led_coffee_ == BeverageLedStatus::OFF &&
-      led_cappuccino_ == BeverageLedStatus::FULL_BRIGHTNESS) {
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::FULL_BRIGHTNESS) {
     if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
       return format_beverage_selection("Cappuccino");
     return "Busy";
   }
-  if (led_espresso_ == BeverageLedStatus::OFF &&
-      led_hot_water_ == BeverageLedStatus::FULL_BRIGHTNESS &&
-      led_coffee_ == BeverageLedStatus::OFF &&
-      led_cappuccino_ == BeverageLedStatus::OFF) {
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::OFF) {
     if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
       return format_beverage_selection("Heißes Wasser");
     return "Busy";
   }
-  if (led_espresso_ == BeverageLedStatus::FULL_BRIGHTNESS &&
-      led_hot_water_ == BeverageLedStatus::OFF &&
-      led_coffee_ == BeverageLedStatus::OFF &&
-      led_cappuccino_ == BeverageLedStatus::OFF) {
+  if (status_.led_espresso == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::OFF) {
     if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
       return format_beverage_selection("Espresso");
     return "Busy";
@@ -153,112 +153,40 @@ void StatusSensor::dump_config() {
 }
 
 void StatusSensor::update_status(uint8_t *data, size_t len) {
-  // reject invalid messages
-  if (len != 19 || data[0] != 0xD5 || data[1] != 0x55)
-    return;
-
-  // TODO: figure out how the checksum is calculated and only parse valid
-  // messages
-
-  bool prev_led_start_stop = led_start_stop_;
-  led_start_stop_ = data[16] == 0x07;
+  bool prev_led_start_stop = status_.led_start_stop;
+  status_.update_status(data, len);
 
   // Check if the play/pause button is on/off/blinking
-  if (prev_led_start_stop != led_start_stop_)
+  if (prev_led_start_stop != status_.led_start_stop)
     start_stop_last_change_ = millis();
-
-  if (data[3] == 0x03)
-    led_espresso_ = BeverageLedStatus::HALF_BRIGHTNESS;
-  else if (data[3] == 0x07)
-    led_espresso_ = BeverageLedStatus::FULL_BRIGHTNESS;
-  else if (data[3] == 0x38)
-    led_espresso_ = BeverageLedStatus::TWO_DRINKS;
-  else
-    led_espresso_ = BeverageLedStatus::OFF;
-
-  if (data[4] == 0x03)
-    led_hot_water_ = BeverageLedStatus::HALF_BRIGHTNESS;
-  else if (data[4] == 0x07)
-    led_hot_water_ = BeverageLedStatus::FULL_BRIGHTNESS;
-  else if (data[4] == 0x38)
-    led_hot_water_ = BeverageLedStatus::TWO_DRINKS;
-  else
-    led_hot_water_ = BeverageLedStatus::OFF;
-
-  if (data[5] == 0x03)
-    led_coffee_ = BeverageLedStatus::HALF_BRIGHTNESS;
-  else if (data[5] == 0x07)
-    led_coffee_ = BeverageLedStatus::FULL_BRIGHTNESS;
-  else if (data[5] == 0x38)
-    led_coffee_ = BeverageLedStatus::TWO_DRINKS;
-  else
-    led_coffee_ = BeverageLedStatus::OFF;
-
-  if (data[6] == 0x03)
-    led_cappuccino_ = BeverageLedStatus::HALF_BRIGHTNESS;
-  else if (data[6] == 0x07)
-    led_cappuccino_ = BeverageLedStatus::FULL_BRIGHTNESS;
-  else if (data[6] == 0x38)
-    led_cappuccino_ = BeverageLedStatus::TWO_DRINKS;
-  else
-    led_cappuccino_ = BeverageLedStatus::OFF;
-
-  if (data[9] == 0x07) {
-    led_powder_ = false;
-
-    if (data[8] == 0x00)
-      led_beans_ = SettingLedStatus::LEVEL_1;
-    else if (data[8] == 0x38)
-      led_beans_ = SettingLedStatus::LEVEL_2;
-    else if (data[8] == 0x3F)
-      led_beans_ = SettingLedStatus::LEVEL_3;
-  } else if (data[9] == 0x38) {
-    led_powder_ = true;
-    led_beans_ = SettingLedStatus::LEVEL_0;
-  } else {
-    led_powder_ = false;
-    led_beans_ = SettingLedStatus::LEVEL_0;
-  }
-
-  if (data[11] == 0x07) {
-    if (data[10] == 0x00)
-      led_size_ = SettingLedStatus::LEVEL_1;
-    else if (data[10] == 0x38)
-      led_size_ = SettingLedStatus::LEVEL_2;
-    else if (data[10] == 0x3F)
-      led_size_ = SettingLedStatus::LEVEL_3;
-  } else {
-    led_size_ = SettingLedStatus::LEVEL_0;
-  }
-
-  led_water_empty_ = data[14] == 0x38;
-  led_error_ = data[15] == 0x38;
-  led_waste_full_ = data[15] == 0x07;
 
   if (status_type_ == StatusType::OVERALL) {
     update_state(format_overall_status());
   } else if (status_type_ == StatusType::LED_ESPRESSO) {
-    update_state(format_beverage_status(led_espresso_));
+    update_state(format_beverage_status(status_.led_espresso));
   } else if (status_type_ == StatusType::LED_COFFEE) {
-    update_state(format_beverage_status(led_coffee_));
+    update_state(format_beverage_status(status_.led_coffee));
   } else if (status_type_ == StatusType::LED_CAPPUCCINO) {
-    update_state(format_beverage_status(led_cappuccino_));
+    update_state(format_beverage_status(status_.led_cappuccino));
   } else if (status_type_ == StatusType::LED_HOT_WATER) {
-    update_state(format_beverage_status(led_hot_water_));
+    update_state(format_beverage_status(status_.led_hot_water));
   } else if (status_type_ == StatusType::LED_BEANS) {
-    update_state(format_setting_status(led_beans_));
+    update_state(format_setting_status(status_.led_beans));
   } else if (status_type_ == StatusType::LED_SIZE) {
-    update_state(format_setting_status(led_size_));
+    update_state(format_setting_status(status_.led_size));
   } else if (status_type_ == StatusType::LED_POWDER) {
-    update_state(format_binary_status(led_powder_));
-  } else if (status_type_ == StatusType::LED_START_STOP) {
-    update_state(format_binary_status(led_start_stop_));
+    update_state(format_binary_status(status_.led_powder));
   } else if (status_type_ == StatusType::LED_WASTE_FULL) {
-    update_state(format_binary_status(led_waste_full_));
+    update_state(format_binary_status(status_.led_waste_full));
   } else if (status_type_ == StatusType::LED_WATER_EMPTY) {
-    update_state(format_binary_status(led_water_empty_));
+    update_state(format_binary_status(status_.led_water_empty));
   } else if (status_type_ == StatusType::LED_ERROR) {
-    update_state(format_binary_status(led_error_));
+    update_state(format_binary_status(status_.led_error));
+  } else if (status_type_ == StatusType::LED_START_STOP) {
+    if (millis() - start_stop_last_change_ < BLINK_THRESHOLD)
+      update_state("Blinkt");
+    else
+      update_state(format_binary_status(status_.led_start_stop));
   }
 }
 
