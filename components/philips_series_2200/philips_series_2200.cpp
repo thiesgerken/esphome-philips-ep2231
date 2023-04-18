@@ -91,6 +91,7 @@ void PhilipsSeries2200::setup() {
 
 void PhilipsSeries2200::loop() {
   uint8_t buffer[BUFFER_SIZE];
+  bool display_active = false;
 
   // Pipe display to mainboard
   if (display_uart_.available()) {
@@ -100,41 +101,53 @@ void PhilipsSeries2200::loop() {
     mainboard_uart_.write_array(buffer, size);
     last_message_from_display_time_ = millis();
 
-    if (size == 12 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
-      std::string res = "Display -> Mainboard: ";
-      char buf[5];
-      for (size_t i = 0; i < size; i++) {
-        sprintf(buf, "%02X ", buffer[i]);
-        res += buf;
-      }
-      ESP_LOGD(TAG, res.c_str());
-    }
+    // if (size == 12 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
+    //   std::string res = "Display -> Mainboard: ";
+    //   char buf[5];
+    //   for (size_t i = 0; i < size; i++) {
+    //     sprintf(buf, "%02X ", buffer[i]);
+    //     res += buf;
+    //   }
+    //   ESP_LOGD(TAG, res.c_str());
+    // }
+
+    // don't block for too long
+    mainboard_uart_.flush();
+    return;
   }
 
-  // Read until start index
+  // Read from mainboard until start index
+  uint8_t cnt = 0
   while (mainboard_uart_.available()) {
     uint8_t buffer = mainboard_uart_.peek();
     if (buffer == 0xD5)
       break;
+
     display_uart_.write(mainboard_uart_.read());
+
+    if (cnt++ >= 64) {
+        // don't block for too long
+        display_uart_.flush();
+        return;
+    }
   }
 
   // Pipe to display
   if (mainboard_uart_.available()) {
-    uint8_t size = std::min(mainboard_uart_.available(), BUFFER_SIZE);
-    mainboard_uart_.read_array(buffer, size);
+    uint8_t size = std::min(mainboard_uart_.available(), 19);
 
+    mainboard_uart_.read_array(buffer, size);
     display_uart_.write_array(buffer, size);
 
-    if (size == 19 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
-      std::string res = "Mainboard -> Display: ";
-      char buf[5];
-      for (size_t i = 0; i < size; i++) {
-        sprintf(buf, "%02X ", buffer[i]);
-        res += buf;
-      }
-      ESP_LOGD(TAG, res.c_str());
-    }
+    // if (size == 19 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
+    //   std::string res = "Mainboard -> Display: ";
+    //   char buf[5];
+    //   for (size_t i = 0; i < size; i++) {
+    //     sprintf(buf, "%02X ", buffer[i]);
+    //     res += buf;
+    //   }
+    //   ESP_LOGD(TAG, res.c_str());
+    // }
 
     // reject invalid messages
     // TODO: figure out how the checksum works and only parse valid messages
@@ -148,7 +161,9 @@ void PhilipsSeries2200::loop() {
 
   // Publish power state if required as long as the display is requesting
   // messages
-  if (power_switches_.size() > 0) {
+  if (millis() - last_power_update_ > 1000) {
+    last_power_update_ = millis();
+
     if (millis() - last_message_from_display_time_ > POWER_STATE_TIMEOUT) {
       // Update power switches
       for (philips_power_switch::Power *power_switch : power_switches_)
