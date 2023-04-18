@@ -149,34 +149,28 @@ void PhilipsSeries2200::loop() {
     //   ESP_LOGD(TAG, res.c_str());
     // }
 
-    // reject invalid messages
-    // TODO: figure out how the checksum works and only parse valid messages
+    // NOTE: would be nice to figure out how the checksum works
+    // in order to ignore invalid messages better
     if (size == 19 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
+      last_message_from_mainboard_time_ = millis();
+
       for (philips_status_sensor::StatusSensor *status_sensor : status_sensors_)
         status_sensor->update_status(buffer, size);
       for (philips_action_button::ActionButton *action_button : action_buttons_)
         action_button->update_status(buffer, size);
-    }
-  }
-
-  // Publish power state if required as long as the display is requesting
-  // messages
-  if (millis() - last_power_update_ > 1000) {
-    last_power_update_ = millis();
-
-    if (millis() - last_message_from_display_time_ > POWER_STATE_TIMEOUT) {
-      // Update power switches
-      for (philips_power_switch::Power *power_switch : power_switches_)
-        power_switch->publish_state(false);
-
-      // Update status sensors
-      for (philips_status_sensor::StatusSensor *status_sensor : status_sensors_)
-        status_sensor->set_state_off();
-    } else {
-      // Update power switches
       for (philips_power_switch::Power *power_switch : power_switches_)
         power_switch->publish_state(true);
     }
+  }
+
+  if (millis() - last_message_from_mainboard_time_ > POWER_STATE_TIMEOUT) {
+    // Update power switches
+    for (philips_power_switch::Power *power_switch : power_switches_)
+      power_switch->publish_state(false);
+
+    // Update status sensors
+    for (philips_status_sensor::StatusSensor *status_sensor : status_sensors_)
+      status_sensor->set_state_off();
   }
 
   display_uart_.flush();

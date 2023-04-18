@@ -6,7 +6,7 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 
-#define POWER_STATE_TIMEOUT 100
+#define POWER_STATE_TIMEOUT 250
 
 namespace esphome {
 namespace philips_series_2200 {
@@ -72,6 +72,7 @@ public:
 
 private:
   long last_message_from_display_time_ = 0;
+  long last_message_from_mainboard_time_ = 0;
   long last_power_update_ = 0;
 
   /// @brief reference to uart connected to the display unit
