@@ -119,13 +119,12 @@ void PhilipsSeries2200::loop() {
   // Read from mainboard until start index
   uint8_t cnt = 0;
   while (mainboard_uart_.available()) {
-    uint8_t buffer = mainboard_uart_.peek();
-    if (buffer == 0xD5)
+    if (mainboard_uart_.peek() == 0xD5)
       break;
 
     display_uart_.write(mainboard_uart_.read());
 
-    if (cnt++ >= 64) {
+    if (cnt++ >= 16) {
         // don't block for too long
         display_uart_.flush();
         return;
