@@ -117,7 +117,7 @@ void PhilipsSeries2200::loop() {
   }
 
   // Read from mainboard until start index
-  uint8_t cnt = 0
+  uint8_t cnt = 0;
   while (mainboard_uart_.available()) {
     uint8_t buffer = mainboard_uart_.peek();
     if (buffer == 0xD5)
