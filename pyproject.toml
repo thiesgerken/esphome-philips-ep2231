@@ -7,11 +7,11 @@ readme = "README.md"
 packages = [{include = "esphome_philips_ep2231"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-esphome = "^2023.2.4"
+python = ">=3.11,<3.13"
+esphome = ">=2023.2.4"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.1.0"
+black = ">=23.1.0"
 
 [build-system]
 requires = ["poetry-core"]
