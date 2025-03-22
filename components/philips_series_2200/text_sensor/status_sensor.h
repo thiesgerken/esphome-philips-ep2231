@@ -5,7 +5,7 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 
-#define BLINK_THRESHOLD 1500
+#define BLINK_THRESHOLD 2500
 
 namespace esphome {
 namespace philips_series_2200 {
