@@ -5,7 +5,7 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 
-#define BLINK_THRESHOLD 750
+#define BLINK_THRESHOLD 1500
 
 namespace esphome {
 namespace philips_series_2200 {
@@ -67,7 +67,7 @@ public:
    *
    */
   void update_state(const std::string &state) {
-    size_t repeat_requirement = status_type_ == StatusType::OVERALL ? 16 : 4;
+    size_t repeat_requirement = status_type_ == StatusType::OVERALL ? 32 : 4;
 
     if (state == new_state_) {
       if (new_state_counter_ >= repeat_requirement) {
