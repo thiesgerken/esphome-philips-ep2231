@@ -24,7 +24,7 @@ ACTIONS = {
     "start_stop": Action.START_STOP,
 }
 
-CONFIG_SCHEMA = button.BUTTON_SCHEMA.extend(
+CONFIG_SCHEMA = button.button_schema(ActionButton).extend(
     {
         cv.GenerateID(): cv.declare_id(ActionButton),
         cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),

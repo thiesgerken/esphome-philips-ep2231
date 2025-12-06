@@ -28,7 +28,7 @@ STATUS_TYPES = {
     "led_error": StatusType.LED_ERROR,
 }
 
-CONFIG_SCHEMA = text_sensor.TEXT_SENSOR_SCHEMA.extend(
+CONFIG_SCHEMA = text_sensor.text_sensor_schema(StatusSensor).extend(
     {
         cv.GenerateID(): cv.declare_id(StatusSensor),
         cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),

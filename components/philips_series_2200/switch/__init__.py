@@ -12,7 +12,7 @@ power_switch_namespace = philips_series_2200_ns.namespace("philips_power_switch"
 PowerSwitch = power_switch_namespace.class_(
     'Power', switch.Switch, cg.Component)
 
-CONFIG_SCHEMA = switch.SWITCH_SCHEMA.extend({
+CONFIG_SCHEMA = switch.switch_schema(PowerSwitch).extend({
     cv.GenerateID(): cv.declare_id(PowerSwitch),
     cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
     cv.Optional(CLEAN_DURING_START, default=True): cv.boolean # type: ignore
