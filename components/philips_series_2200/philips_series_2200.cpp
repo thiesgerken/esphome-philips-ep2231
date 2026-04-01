@@ -95,7 +95,7 @@ void PhilipsSeries2200::loop() {
 
   // Pipe display to mainboard
   if (display_uart_.available()) {
-    uint8_t size = std::min(display_uart_.available(), BUFFER_SIZE);
+    uint8_t size = std::min(display_uart_.available(), (size_t)BUFFER_SIZE);
     display_uart_.read_array(buffer, size);
 
     mainboard_uart_.write_array(buffer, size);
@@ -133,7 +133,7 @@ void PhilipsSeries2200::loop() {
 
   // Pipe to display
   if (mainboard_uart_.available()) {
-    uint8_t size = std::min(mainboard_uart_.available(), 19);
+    uint8_t size = std::min(mainboard_uart_.available(), (size_t)19);
 
     mainboard_uart_.read_array(buffer, size);
     display_uart_.write_array(buffer, size);
