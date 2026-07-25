@@ -34,7 +34,10 @@ void ActionButton::press_action() {
   // The machine ignores these buttons while their led is dark. Checked once
   // per press, not per repetition: a long press on the bean button switches to
   // ground coffee, which turns that led off while the press is still running.
-  if (action_ == BEANS && status_.led_beans == SettingLedStatus::LEVEL_0) {
+  // led_beans is LEVEL_0 in powder mode as well, but there the group is lit and
+  // showing powder — that is the state a long press has to get back out of.
+  if (action_ == BEANS && status_.led_beans == SettingLedStatus::LEVEL_0 &&
+      !status_.led_powder) {
     ESP_LOGW(TAG, "Refusing to press bean button as it is not lit up");
     return;
   }
