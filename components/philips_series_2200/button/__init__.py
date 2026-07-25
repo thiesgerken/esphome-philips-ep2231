@@ -7,6 +7,7 @@ from .. import CONTROLLER_ID, PhilipsSeries2200, philips_series_2200_ns
 DEPENDENCIES = ["philips_series_2200"]
 
 CONF_ACTION = "action"
+CONF_LONG_PRESS = "long_press"
 
 philips_action_button_ns = philips_series_2200_ns.namespace("philips_action_button")
 ActionButton = philips_action_button_ns.class_("ActionButton", button.Button, cg.Component)
@@ -29,6 +30,7 @@ CONFIG_SCHEMA = button.button_schema(ActionButton).extend(
         cv.GenerateID(): cv.declare_id(ActionButton),
         cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
         cv.Required(CONF_ACTION): cv.enum(ACTIONS, lower=True, space="_"),
+        cv.Optional(CONF_LONG_PRESS, default=False): cv.boolean,
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -40,4 +42,5 @@ async def to_code(config):
     await button.register_button(var, config)
 
     cg.add(var.set_action(config[CONF_ACTION]))
+    cg.add(var.set_long_press(config[CONF_LONG_PRESS]))
     cg.add(parent.add_action_button(var))

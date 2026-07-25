@@ -99,7 +99,17 @@ void PhilipsSeries2200::loop() {
     uint8_t size = std::min(display_uart_.available(), (size_t)BUFFER_SIZE);
     display_uart_.read_array(buffer, size);
 
-    mainboard_uart_.write_array(buffer, size);
+    // While a button is held down the display keeps reporting "no button
+    // pressed", which would cancel the injected long press immediately.
+    bool long_pressing = false;
+    for (philips_action_button::ActionButton *action_button : action_buttons_)
+      if (action_button->is_long_pressing()) {
+        long_pressing = true;
+        break;
+      }
+
+    if (!long_pressing)
+      mainboard_uart_.write_array(buffer, size);
     last_message_from_display_time_ = millis();
 
     // if (size == 12 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
