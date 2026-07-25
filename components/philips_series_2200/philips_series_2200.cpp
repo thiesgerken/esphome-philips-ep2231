@@ -119,7 +119,7 @@ void PhilipsSeries2200::loop() {
   // Read from mainboard until start index
   uint8_t cnt = 0;
   while (mainboard_uart_.available()) {
-    if (mainboard_uart_.peek() == 0xD5)
+    if (mainboard_uart_.peek() == message_header[0])
       break;
 
     display_uart_.write(mainboard_uart_.read());
@@ -150,7 +150,8 @@ void PhilipsSeries2200::loop() {
 
     // NOTE: would be nice to figure out how the checksum works
     // in order to ignore invalid messages better
-    if (size == 19 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
+    if (size == 19 && buffer[0] == message_header[0] &&
+        buffer[1] == message_header[1]) {
       last_message_from_mainboard_time_ = millis();
 
       for (philips_status_sensor::StatusSensor *status_sensor : status_sensors_)

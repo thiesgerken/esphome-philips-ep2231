@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../commands.h"
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"

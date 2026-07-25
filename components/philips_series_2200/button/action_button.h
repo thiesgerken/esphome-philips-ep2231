@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../commands.h"
 #include "../status_parser.h"
 #include "esphome/components/button/button.h"
 #include "esphome/components/uart/uart.h"
