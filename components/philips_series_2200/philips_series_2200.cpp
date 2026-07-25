@@ -177,9 +177,11 @@ void PhilipsSeries2200::loop() {
         for (philips_action_button::ActionButton *action_button :
              action_buttons_)
           action_button->update_status(buffer, size);
+#ifdef USE_NUMBER
         for (philips_beverage_setting::BeverageSetting *beverage_setting :
              beverage_settings_)
           beverage_setting->update_status(buffer, size);
+#endif
       }
 
       std::copy_n(buffer + 17, 2, last_checksum_);
