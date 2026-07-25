@@ -17,51 +17,77 @@ void ActionButton::write_array(const std::vector<uint8_t> &data) {
   mainboard_uart_->flush();
 }
 
+void ActionButton::loop() {
+  if (!should_long_press_ || millis() - press_start_ > LONG_PRESS_DURATION) {
+    is_long_pressing_ = false;
+    return;
+  }
+
+  is_long_pressing_ = true;
+  if (millis() - last_message_sent_ > LONG_PRESS_REPETITION_DELAY) {
+    last_message_sent_ = millis();
+    perform_action();
+  }
+}
+
 void ActionButton::press_action() {
+  // The machine ignores these buttons while their led is dark. Checked once
+  // per press, not per repetition: a long press on the bean button switches to
+  // ground coffee, which turns that led off while the press is still running.
+  if (action_ == BEANS && status_.led_beans == SettingLedStatus::LEVEL_0) {
+    ESP_LOGW(TAG, "Refusing to press bean button as it is not lit up");
+    return;
+  }
+  if (action_ == SIZE && status_.led_size == SettingLedStatus::LEVEL_0) {
+    ESP_LOGW(TAG, "Refusing to press size button as it is not lit up");
+    return;
+  }
+
+  if (should_long_press_) {
+    press_start_ = millis();
+    last_message_sent_ = 0;
+    return;
+  }
+
+  perform_action();
+}
+
+void ActionButton::perform_action() {
   switch (action_) {
   case COFFEE:
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x08, 0x00, 0x00,
-                 0x39, 0x1C});
+    write_array(command_press_coffee);
     return;
   case ESPRESSO:
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x02, 0x00, 0x00,
-                 0x09, 0x2D});
+    write_array(command_press_espresso);
     return;
   case HOT_WATER:
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x04, 0x00, 0x00,
-                 0x21, 0x01});
+    write_array(command_press_hot_water);
     return;
   case CAPPUCCINO:
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x10, 0x00, 0x00,
-                 0x09, 0x26});
+    write_array(command_press_cappuccino);
     return;
   case START_STOP:
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x00, 0x00, 0x01,
-                 0x19, 0x32});
+    write_array(command_press_start_stop);
     return;
   case BEANS:
     if (status_.led_beans == SettingLedStatus::LEVEL_0) {
       ESP_LOGW(TAG, "Refusing to press bean button as it is not lit up");
       return;
     }
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,
-                 0x09, 0x2F});
+    write_array(command_press_beans);
     return;
   case SIZE:
     if (status_.led_size == SettingLedStatus::LEVEL_0) {
       ESP_LOGW(TAG, "Refusing to press size button as it is not lit up");
       return;
     }
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x00, 0x04, 0x00,
-                 0x20, 0x05});
+    write_array(command_press_size);
     return;
   case AQUA_CLEAN:
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x00, 0x10, 0x00,
-                 0x0D, 0x36});
+    write_array(command_press_aqua_clean);
     return;
   case CALC_CLEAN:
-    write_array({0xD5, 0x55, 0x00, 0x01, 0x02, 0x00, 0x02, 0x00, 0x20, 0x00,
-                 0x28, 0x37});
+    write_array(command_press_calc_clean);
     return;
   default:
     ESP_LOGE(TAG, "Invalid Action provided!");

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./button/action_button.h"
+#include "./number/beverage_setting.h"
 #include "./switch/power.h"
 #include "./text_sensor/status_sensor.h"
 #include "esphome/components/uart/uart.h"
@@ -70,10 +71,25 @@ public:
     status_sensors_.push_back(status_sensor);
   }
 
+  /**
+   * @brief Adds a bean/size setting to this controller.
+   * No reference is stored, but the correct uart reference is passed along.
+   *
+   * @param beverage_setting Setting which will be added to this controller
+   */
+  void add_beverage_setting(
+      philips_beverage_setting::BeverageSetting *beverage_setting) {
+    beverage_setting->set_uart_device(&mainboard_uart_);
+    beverage_settings_.push_back(beverage_setting);
+  }
+
 private:
   long last_message_from_display_time_ = 0;
   long last_message_from_mainboard_time_ = 0;
   long last_power_update_ = 0;
+
+  /// @brief trailing two bytes of the previous mainboard message
+  uint8_t last_checksum_[2] = {0, 0};
 
   /// @brief reference to uart connected to the display unit
   uart::UARTDevice display_uart_;
@@ -88,6 +104,9 @@ private:
   std::vector<philips_status_sensor::StatusSensor *> status_sensors_;
 
   std::vector<philips_action_button::ActionButton *> action_buttons_;
+
+  /// @brief list of bean/size settings to update with messages
+  std::vector<philips_beverage_setting::BeverageSetting *> beverage_settings_;
 };
 
 } // namespace philips_series_2200

@@ -84,7 +84,8 @@ std::string StatusSensor::beverage_selection() {
   return "";
 }
 
-std::string StatusSensor::format_beverage_selection(const std::string &beverage) {
+std::string
+StatusSensor::format_beverage_selection(const std::string &beverage) {
   std::stringstream ss;
   ss << beverage << " ausgewählt (";
 

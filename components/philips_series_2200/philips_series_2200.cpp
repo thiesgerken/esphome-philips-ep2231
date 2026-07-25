@@ -1,6 +1,7 @@
 #include "philips_series_2200.h"
 #include "esphome/core/log.h"
 #include "status_parser.h"
+#include <algorithm>
 
 #define BUFFER_SIZE 32
 
@@ -98,7 +99,17 @@ void PhilipsSeries2200::loop() {
     uint8_t size = std::min(display_uart_.available(), (size_t)BUFFER_SIZE);
     display_uart_.read_array(buffer, size);
 
-    mainboard_uart_.write_array(buffer, size);
+    // While a button is held down the display keeps reporting "no button
+    // pressed", which would cancel the injected long press immediately.
+    bool long_pressing = false;
+    for (philips_action_button::ActionButton *action_button : action_buttons_)
+      if (action_button->is_long_pressing()) {
+        long_pressing = true;
+        break;
+      }
+
+    if (!long_pressing)
+      mainboard_uart_.write_array(buffer, size);
     last_message_from_display_time_ = millis();
 
     // if (size == 12 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
@@ -119,15 +130,15 @@ void PhilipsSeries2200::loop() {
   // Read from mainboard until start index
   uint8_t cnt = 0;
   while (mainboard_uart_.available()) {
-    if (mainboard_uart_.peek() == 0xD5)
+    if (mainboard_uart_.peek() == message_header[0])
       break;
 
     display_uart_.write(mainboard_uart_.read());
 
     if (cnt++ >= 16) {
-        // don't block for too long
-        display_uart_.flush();
-        return;
+      // don't block for too long
+      display_uart_.flush();
+      return;
     }
   }
 
@@ -148,17 +159,30 @@ void PhilipsSeries2200::loop() {
     //   ESP_LOGD(TAG, res.c_str());
     // }
 
-    // NOTE: would be nice to figure out how the checksum works
-    // in order to ignore invalid messages better
-    if (size == 19 && buffer[0] == 0xD5 && buffer[1] == 0x55) {
+    if (size == 19 && buffer[0] == message_header[0] &&
+        buffer[1] == message_header[1]) {
       last_message_from_mainboard_time_ = millis();
 
-      for (philips_status_sensor::StatusSensor *status_sensor : status_sensors_)
-        status_sensor->update_status(buffer, size);
-      for (philips_action_button::ActionButton *action_button : action_buttons_)
-        action_button->update_status(buffer, size);
       for (philips_power_switch::Power *power_switch : power_switches_)
         power_switch->publish_state(true);
+
+      // NOTE: would be nice to figure out how the checksum works. Until then:
+      // the mainboard repeats every frame, so a frame whose trailing two bytes
+      // differ from the previous one was garbled in transit. Dropping those
+      // removes most of the bogus intermediate states.
+      if (std::equal(buffer + 17, buffer + 19, last_checksum_)) {
+        for (philips_status_sensor::StatusSensor *status_sensor :
+             status_sensors_)
+          status_sensor->update_status(buffer, size);
+        for (philips_action_button::ActionButton *action_button :
+             action_buttons_)
+          action_button->update_status(buffer, size);
+        for (philips_beverage_setting::BeverageSetting *beverage_setting :
+             beverage_settings_)
+          beverage_setting->update_status(buffer, size);
+      }
+
+      std::copy_n(buffer + 17, 2, last_checksum_);
     }
   }
 
