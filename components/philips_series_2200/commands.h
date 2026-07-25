@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <vector>
 
+// The mainboard drops single messages, so every command is sent repeatedly.
+#define MESSAGE_REPETITIONS 5
+
 namespace esphome {
 namespace philips_series_2200 {
 

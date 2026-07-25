@@ -16,10 +16,9 @@ You might break/brick your coffee machine by modifying it in any way, shape or f
 ## Ideas for Improvement
 
 - use a non-cleaning startup automatically if the machine has been turned off only for a short time period
-- long press bean button to go to powder selection
 - figure out how to go back to the main menu from drink selection
 - integrate calc'n'clean & descaling LED status, and properly test the actions
-- figure out how the checksum calculation works in order to discard invalid messages
+- figure out how the checksum calculation actually works; messages are currently validated by comparing the trailing two bytes against the previous message, which works because the mainboard repeats every frame
 - if someone else wants to use this: proper i18n; the status texts are localized to german at the moment (because that's the way I like to have it in the HA UI)
 - seems like when starting without a cleaning cycle, then hot water doesn't work properly
 - estimate power consumption
@@ -45,12 +44,23 @@ A example configuration can be found [here](example.yaml)
 
 - **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
 - **action**(**Required**, int): The action performed by this button. Select one of `COFFEE`, `ESPRESSO`, `HOT_WATER`, `CAPPUCCINO`, `BEANS`, `SIZE`, `AQUA_CLEAN`, `CALC_CLEAN`, `START_STOP`.
+- **long_press**(**Optional**, boolean): If set to true the button is held down instead of tapped. That is how the machine reaches its secondary functions, e.g. `BEANS` with `long_press` switches to pre-ground coffee. Defaults to `false`.
 - All other options from [Button](https://esphome.io/components/button/index.html#config-button)
 
 ## Philips Status Sensor
 
 - **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
 - All other options from [Text Sensor](https://esphome.io/components/text_sensor/index.html#config-text-sensor)
+
+## Philips Beverage Setting
+
+Reports and sets the bean amount/cup size of whatever beverage is selected on the machine right now.
+The value ranges from `1` to `3` and is unavailable whenever the corresponding led is dark, i.e. outside the selection screen.
+Writing a value presses the button until the machine has cycled to that level.
+
+- **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
+- **type**(**Required**, string): Setting controlled by this entity, either `BEANS` or `SIZE`.
+- All other options from [Number](https://esphome.io/components/number/index.html#config-number)
 
 # Fully automated coffee
 
