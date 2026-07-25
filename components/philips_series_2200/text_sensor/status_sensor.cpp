@@ -44,7 +44,47 @@ std::string StatusSensor::format_setting_status(SettingLedStatus status) {
   return "unbekannt";
 }
 
-std::string StatusSensor::format_beverage_selection(std::string beverage) {
+std::string StatusSensor::beverage_selection() {
+  // The size LED is only lit on the selection screen. Without it the beverage
+  // LEDs are mid-animation (power up/down), and single frames of that animation
+  // look exactly like a beverage selection.
+  if (status_.led_size == SettingLedStatus::LEVEL_0)
+    return "";
+
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::OFF) {
+    if (status_.led_coffee == BeverageLedStatus::FULL_BRIGHTNESS)
+      return "Kaffee";
+    if (status_.led_coffee == BeverageLedStatus::TWO_DRINKS)
+      return "2x Kaffee";
+  }
+
+  if (status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::OFF) {
+    if (status_.led_espresso == BeverageLedStatus::FULL_BRIGHTNESS)
+      return "Espresso";
+    if (status_.led_espresso == BeverageLedStatus::TWO_DRINKS)
+      return "2x Espresso";
+  }
+
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::OFF &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::FULL_BRIGHTNESS)
+    return "Cappuccino";
+
+  if (status_.led_espresso == BeverageLedStatus::OFF &&
+      status_.led_hot_water == BeverageLedStatus::FULL_BRIGHTNESS &&
+      status_.led_coffee == BeverageLedStatus::OFF &&
+      status_.led_cappuccino == BeverageLedStatus::OFF)
+    return "Heißes Wasser";
+
+  return "";
+}
+
+std::string StatusSensor::format_beverage_selection(const std::string &beverage) {
   std::stringstream ss;
   ss << beverage << " ausgewählt (";
 
@@ -93,14 +133,19 @@ std::string StatusSensor::format_overall_status() {
     // user is on the selection screen/idle we can reset the timer
     start_stop_last_change_ = millis();
 
+    selection_ = "";
     return "Bereit";
   }
 
   if (status_.led_start_stop &&
-      millis() - start_stop_last_change_ >= BLINK_THRESHOLD)
+      millis() - start_stop_last_change_ >= BLINK_THRESHOLD) {
     // start stop led is on + did not change for a while -> it is not blinking.
-    // the machine is probably brewing a drink.
-    return "Zubereitung";
+    // the machine is dispensing; without a preceding selection that is the
+    // rinse cycle it runs on power up/down.
+    if (selection_.empty())
+      return "Spült";
+    return "Zubereitung (" + selection_ + ")";
+  }
 
   if (status_.led_espresso == BeverageLedStatus::HALF_BRIGHTNESS ||
       status_.led_hot_water == BeverageLedStatus::HALF_BRIGHTNESS ||
@@ -108,6 +153,7 @@ std::string StatusSensor::format_overall_status() {
       status_.led_cappuccino == BeverageLedStatus::HALF_BRIGHTNESS) {
     // Check for rotating icons - pre heating
 
+    selection_ = "";
     if (status_.led_start_stop)
       return "Spült";
     return "Vorbereitung";
@@ -120,42 +166,15 @@ std::string StatusSensor::format_overall_status() {
   if (status_.led_error)
     return "Fehler";
 
-  if (status_.led_espresso == BeverageLedStatus::OFF &&
-      status_.led_hot_water == BeverageLedStatus::OFF &&
-      status_.led_coffee == BeverageLedStatus::FULL_BRIGHTNESS &&
-      status_.led_cappuccino == BeverageLedStatus::OFF) {
-    return format_beverage_selection("Kaffee");
+  std::string selection = beverage_selection();
+  if (!selection.empty()) {
+    // remembered until the machine goes back to idle/preparing: the size LED
+    // goes dark a few frames before the machine starts dispensing, so the
+    // selection is no longer readable at that point.
+    selection_ = selection;
+    return format_beverage_selection(selection);
   }
-  if (status_.led_espresso == BeverageLedStatus::OFF &&
-      status_.led_hot_water == BeverageLedStatus::OFF &&
-      status_.led_coffee == BeverageLedStatus::TWO_DRINKS &&
-      status_.led_cappuccino == BeverageLedStatus::OFF) {
-    return format_beverage_selection("2x Kaffee");
-  }
-  if (status_.led_espresso == BeverageLedStatus::FULL_BRIGHTNESS &&
-      status_.led_hot_water == BeverageLedStatus::OFF &&
-      status_.led_coffee == BeverageLedStatus::OFF &&
-      status_.led_cappuccino == BeverageLedStatus::OFF) {
-    return format_beverage_selection("Espresso");
-  }
-  if (status_.led_espresso == BeverageLedStatus::TWO_DRINKS &&
-      status_.led_hot_water == BeverageLedStatus::OFF &&
-      status_.led_coffee == BeverageLedStatus::OFF &&
-      status_.led_cappuccino == BeverageLedStatus::OFF) {
-    return format_beverage_selection("2x Espresso");
-  }
-  if (status_.led_espresso == BeverageLedStatus::OFF &&
-      status_.led_hot_water == BeverageLedStatus::OFF &&
-      status_.led_coffee == BeverageLedStatus::OFF &&
-      status_.led_cappuccino == BeverageLedStatus::FULL_BRIGHTNESS) {
-    return format_beverage_selection("Cappuccino");
-  }
-  if (status_.led_espresso == BeverageLedStatus::OFF &&
-      status_.led_hot_water == BeverageLedStatus::FULL_BRIGHTNESS &&
-      status_.led_coffee == BeverageLedStatus::OFF &&
-      status_.led_cappuccino == BeverageLedStatus::OFF) {
-    return format_beverage_selection("Heißes Wasser");
-  }
+
   return "Unbekannt";
 }
 

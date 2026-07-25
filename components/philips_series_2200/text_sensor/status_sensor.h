@@ -37,7 +37,8 @@ public:
   std::string format_beverage_status(BeverageLedStatus status);
   std::string format_setting_status(SettingLedStatus status);
   std::string format_binary_status(bool status);
-  std::string format_beverage_selection(std::string beverage);
+  std::string beverage_selection();
+  std::string format_beverage_selection(const std::string &beverage);
   std::string format_overall_status();
 
   /**
@@ -50,6 +51,7 @@ public:
    * @brief Sets the status to OFF
    */
   void set_state_off() {
+    selection_ = "";
     if (state != "Aus")
       publish_state("Aus");
   };
@@ -91,6 +93,9 @@ private:
 
   /// @brief time of play/pause change
   long start_stop_last_change_ = 0;
+
+  /// @brief beverage the user selected, empty while no selection is active
+  std::string selection_ = "";
 
   StatusType status_type_ = StatusType::OVERALL;
 
