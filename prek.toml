@@ -33,3 +33,11 @@ hooks = [
     types_or = ["c++", "c"]
   }
 ]
+
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.16.4"
+hooks = [
+  { id = "ruff-check", args = ["--fix"] },
+  { id = "ruff-format" }
+]

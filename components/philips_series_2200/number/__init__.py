@@ -2,6 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import number
 from esphome.const import CONF_ID
+
 from .. import CONTROLLER_ID, PhilipsSeries2200, philips_series_2200_ns
 
 DEPENDENCIES = ["philips_series_2200"]
@@ -21,13 +22,17 @@ TYPES = {
     "size": Type.SIZE,
 }
 
-CONFIG_SCHEMA = number.number_schema(BeverageSetting).extend(
-    {
-        cv.GenerateID(): cv.declare_id(BeverageSetting),
-        cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
-        cv.Required(CONF_TYPE): cv.enum(TYPES, lower=True),
-    }
-).extend(cv.COMPONENT_SCHEMA)
+CONFIG_SCHEMA = (
+    number.number_schema(BeverageSetting)
+    .extend(
+        {
+            cv.GenerateID(): cv.declare_id(BeverageSetting),
+            cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
+            cv.Required(CONF_TYPE): cv.enum(TYPES, lower=True),
+        }
+    )
+    .extend(cv.COMPONENT_SCHEMA)
+)
 
 
 async def to_code(config):
