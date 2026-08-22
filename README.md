@@ -1,6 +1,6 @@
 # ☕ ESPHome Philips EP2231
 
-> Home Assistant control for a Philips Series 2200 (EP2231) coffee machine, over ESPHome.
+> ☕ Home Assistant control for a Philips EP2231 — the Series 2200 with a LatteGo — over ESPHome.
 
 ![ESPHome](https://img.shields.io/badge/ESPHome-2023.2%2B-blue)
 ![Model](https://img.shields.io/badge/model-EP2231-6f4e37)
