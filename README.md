@@ -34,13 +34,13 @@ Comparison as of upstream [`d0ed704`](https://github.com/TillFleisch/ESPHome-Phi
 | Buttons             | 9 actions, `long_press` for secondary functions                                      | `SELECT_*`/`MAKE_*` pairs for 7 drinks, milk, play/pause            |
 | Bean & size numbers | `beans` and `size`, platform is optional                                             | `beans`, `size`, `milk`, with a per-drink `source:`                 |
 | Tuning options      | None — sensible values are compiled in                                               | `invert_power_pin`, `power_trip_delay`, `power_message_repetitions` |
-| Checksum            | Understood well enough to compute any message, see [`protocol.md`](protocol.md)      | Unknown                                                             |
+| Frame validation    | Checksum computed and verified per frame, see [`protocol.md`](protocol.md)           | Checksum unknown; frames accepted when their trailing bytes repeat  |
 
 Three behavioural differences worth knowing:
 
 - **The bridge never stalls.** The display power trip and the long-press injection complete from `loop()` instead of blocking it, so mainboard frames are not dropped while either is in progress.
 - **Power state follows the mainboard**, not the display. The mainboard only ever answers display polls, so its traffic is the more direct signal that the machine is awake.
-- **Incoming frames are still validated by repetition**, not by the checksum: the mainboard repeats every frame, so a frame whose trailing bytes differ from the previous one was garbled in transit and is dropped. Same approach as upstream.
+- **Damaged frames are rejected by their checksum**, computed from the weight table in [`protocol.md`](protocol.md), rather than by waiting for the mainboard to repeat a frame. States therefore reach Home Assistant within a fifth of a second instead of two-and-a-half seconds, and the remaining repeat counter only settles the LED animations the machine plays while powering up and down.
 
 Beyond the protocol notes, the EP2231 command set and the checksum findings in [`protocol.md`](protocol.md) are this fork's own work.
 
@@ -198,7 +198,7 @@ The Wemos D1 Mini has a built-in voltage regulator, so the 5V from the mainboard
 
 ## 📡 Communication protocol
 
-The bus protocol, the EP2231 command set, the machine identification bytes and what is known about the checksum are documented in [`protocol.md`](protocol.md).
+The bus protocol, the EP2231 command set, the machine identification bytes and the checksum — including the weight table this component computes with — are documented in [`protocol.md`](protocol.md).
 
 ## 🧯 Troubleshooting
 
