@@ -34,12 +34,13 @@ Comparison as of upstream [`d0ed704`](https://github.com/TillFleisch/ESPHome-Phi
 | Buttons             | 9 actions, `long_press` for secondary functions                                      | `SELECT_*`/`MAKE_*` pairs for 7 drinks, milk, play/pause            |
 | Bean & size numbers | `beans` and `size`, platform is optional                                             | `beans`, `size`, `milk`, with a per-drink `source:`                 |
 | Tuning options      | None — sensible values are compiled in                                               | `invert_power_pin`, `power_trip_delay`, `power_message_repetitions` |
-| Message validation  | Documented linear checksum, see [`protocol.md`](protocol.md)                         | Trailing bytes compared against the previous frame                  |
+| Checksum            | Understood well enough to compute any message, see [`protocol.md`](protocol.md)      | Unknown                                                             |
 
-Two behavioural differences worth knowing:
+Three behavioural differences worth knowing:
 
 - **The bridge never stalls.** The display power trip and the long-press injection complete from `loop()` instead of blocking it, so mainboard frames are not dropped while either is in progress.
 - **Power state follows the mainboard**, not the display. The mainboard only ever answers display polls, so its traffic is the more direct signal that the machine is awake.
+- **Incoming frames are still validated by repetition**, not by the checksum: the mainboard repeats every frame, so a frame whose trailing bytes differ from the previous one was garbled in transit and is dropped. Same approach as upstream.
 
 Beyond the protocol notes, the EP2231 command set and the checksum findings in [`protocol.md`](protocol.md) are this fork's own work.
 
@@ -103,7 +104,7 @@ The hub component. Everything else refers back to it via `controller_id`.
 
 ### Power switch (`switch`)
 
-Turning it on injects a power-on command and then reboots the display, which otherwise does not notice that the machine woke up.
+Turning it on injects a power-on command and then reboots the display, which otherwise does not notice that the machine woke up. That reboot is retried until the display is back on the bus, or five attempts have failed.
 
 - **controller_id** (**Required**, string)
 - **clean** (**Optional**, boolean): run a cleaning cycle during startup. Defaults to `true`.
