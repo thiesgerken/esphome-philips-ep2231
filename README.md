@@ -20,7 +20,6 @@ You might break/brick your coffee machine by modifying it in any way, shape or f
 - integrate calc'n'clean & descaling LED status, and properly test the actions
 - figure out how the checksum calculation actually works; messages are currently validated by comparing the trailing two bytes against the previous message, which works because the mainboard repeats every frame
 - if someone else wants to use this: proper i18n; the status texts are localized to german at the moment (because that's the way I like to have it in the HA UI)
-- seems like when starting without a cleaning cycle, then hot water doesn't work properly
 - estimate power consumption
 
 ## Configuration variables
