@@ -2,8 +2,8 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import text_sensor
 from esphome.const import CONF_ID
-from .. import CONTROLLER_ID, PhilipsSeries2200, philips_series_2200_ns
 
+from .. import CONTROLLER_ID, PhilipsSeries2200, philips_series_2200_ns
 
 philips_status_sensor_ns = philips_series_2200_ns.namespace("philips_status_sensor")
 StatusSensor = philips_status_sensor_ns.class_(
@@ -28,13 +28,17 @@ STATUS_TYPES = {
     "led_error": StatusType.LED_ERROR,
 }
 
-CONFIG_SCHEMA = text_sensor.text_sensor_schema(StatusSensor).extend(
-    {
-        cv.GenerateID(): cv.declare_id(StatusSensor),
-        cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
-        cv.Required(CONF_STATUS_TYPE): cv.enum(STATUS_TYPES, lower=True, space="_"),
-    }
-).extend(cv.COMPONENT_SCHEMA)
+CONFIG_SCHEMA = (
+    text_sensor.text_sensor_schema(StatusSensor)
+    .extend(
+        {
+            cv.GenerateID(): cv.declare_id(StatusSensor),
+            cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
+            cv.Required(CONF_STATUS_TYPE): cv.enum(STATUS_TYPES, lower=True, space="_"),
+        }
+    )
+    .extend(cv.COMPONENT_SCHEMA)
+)
 
 
 async def to_code(config):
