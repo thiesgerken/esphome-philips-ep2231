@@ -47,7 +47,6 @@ constexpr bool valid(const uint8_t *message, size_t length) {
          message[length - 1] == (uint8_t)((crc >> 8) >> 2);
 }
 
-namespace {
 // Captured messages, checked at compile time. FRAME_IDLE and COMMAND_EP3241 are
 // from other machines, so they also pin down that the parameters do not vary
 // per machine.
@@ -77,7 +76,6 @@ static_assert(valid(FRAME_TWO_COFFEES, 19), "rejects a captured frame");
 static_assert(!valid(FRAME_CORRUPT, 19), "accepts a damaged frame");
 static_assert(valid(COMMAND_ESPRESSO, 12), "rejects a captured command");
 static_assert(valid(COMMAND_EP3241, 12), "rejects a captured command");
-} // namespace
 
 } // namespace checksum
 } // namespace philips_series_2200

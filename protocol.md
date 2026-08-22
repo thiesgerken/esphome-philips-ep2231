@@ -97,7 +97,10 @@ carrying a wrong checksum, and the CRC gives the value each of them should have 
 
 The parameters were pinned by an exhaustive search over all polynomials for CRC-6 through CRC-16,
 symbol widths 6, 7, 8 and 10, both bit orders, allowing any linear map from the register onto the
-12 transmitted bits. Exactly one candidate survives.
+12 transmitted bits. Exactly one polynomial survives. The init and xorout values are less sharply
+determined: 4 register bits never reach the wire, so 16 `(init, xorout)` pairs fit the captures
+equally well. `AAAA`/`0000` is the only one of them that is not an arbitrary bit pattern, and all
+16 compute the same checksum for every 12 and 19 byte message.
 
 #### A warning to the next person
 
@@ -113,6 +116,8 @@ represent that projection, so every candidate fails and the search comes back em
 
 If you are fitting a linear model to a checksum, the width of the register is not the width of the
 field on the wire.
+
+The messages listed below were captured on an EP2220.
 
 ### Power on message
 
