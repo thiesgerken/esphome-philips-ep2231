@@ -18,7 +18,6 @@ You might break/brick your coffee machine by modifying it in any way, shape or f
 - use a non-cleaning startup automatically if the machine has been turned off only for a short time period
 - figure out how to go back to the main menu from drink selection
 - integrate calc'n'clean & descaling LED status, and properly test the actions
-- the checksum algorithm is known (see [protocol.md](protocol.md)), but incoming frames are still validated by comparing the trailing two bytes against the previous message, which works because the mainboard repeats every frame
 - if someone else wants to use this: proper i18n; the status texts are localized to german at the moment (because that's the way I like to have it in the HA UI)
 - estimate power consumption
 
