@@ -7,6 +7,13 @@
 
 #define BLINK_THRESHOLD 1500
 
+// The mainboard sends roughly 12 frames per second, so this is a fifth of a
+// second of settling time. It debounces the LED animations the machine plays
+// while powering up and down, whose intermediate states are genuine and pass
+// the checksum. It is not there to catch damaged frames; those are rejected in
+// the bridge before they reach any sensor.
+#define STATE_REPEAT_REQUIREMENT 3
+
 namespace esphome {
 namespace philips_series_2200 {
 namespace philips_status_sensor {
@@ -69,10 +76,8 @@ public:
    *
    */
   void update_state(const std::string &state) {
-    size_t repeat_requirement = status_type_ == StatusType::OVERALL ? 32 : 4;
-
     if (state == new_state_) {
-      if (new_state_counter_ >= repeat_requirement) {
+      if (new_state_counter_ >= STATE_REPEAT_REQUIREMENT) {
         if (this->state != state)
           publish_state(state);
       } else {

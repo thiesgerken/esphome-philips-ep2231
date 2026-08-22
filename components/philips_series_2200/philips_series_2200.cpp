@@ -1,4 +1,5 @@
 #include "philips_series_2200.h"
+#include "checksum.h"
 #include "esphome/core/log.h"
 #include "status_parser.h"
 #include <algorithm>
@@ -167,11 +168,7 @@ void PhilipsSeries2200::loop() {
       for (philips_power_switch::Power *power_switch : power_switches_)
         power_switch->update_state(true);
 
-      // NOTE: would be nice to figure out how the checksum works. Until then:
-      // the mainboard repeats every frame, so a frame whose trailing two bytes
-      // differ from the previous one was garbled in transit. Dropping those
-      // removes most of the bogus intermediate states.
-      if (std::equal(buffer + 17, buffer + 19, last_checksum_)) {
+      if (checksum::valid(buffer, size)) {
         for (philips_status_sensor::StatusSensor *status_sensor :
              status_sensors_)
           status_sensor->update_status(buffer, size);
@@ -183,9 +180,9 @@ void PhilipsSeries2200::loop() {
              beverage_settings_)
           beverage_setting->update_status(buffer, size);
 #endif
+      } else {
+        ESP_LOGD(TAG, "Dropped a damaged frame from the mainboard");
       }
-
-      std::copy_n(buffer + 17, 2, last_checksum_);
     }
   }
 
