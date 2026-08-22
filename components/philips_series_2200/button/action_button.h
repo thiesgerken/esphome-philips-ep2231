@@ -8,6 +8,10 @@
 
 #define LONG_PRESS_REPETITION_DELAY 50
 #define LONG_PRESS_DURATION 3500
+// The display holds a button for 47..114 ms and then goes back to polling,
+// which at its rate is one or two press messages. Firing a burst instead makes
+// the mainboard lock the button out; see the investigation in the pull request.
+#define SHORT_PRESS_DURATION 100
 
 namespace esphome {
 namespace philips_series_2200 {
@@ -71,7 +75,7 @@ public:
 
 private:
   /**
-   * @brief Writes data MESSAGE_REPETITIONS times to the mainboard uart
+   * @brief Writes one message to the mainboard uart
    *
    * @param data Data to send
    */
