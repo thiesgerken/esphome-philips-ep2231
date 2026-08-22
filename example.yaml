@@ -1,59 +1,90 @@
+esphome:
+  name: coffee
+
 esp8266:
   board: d1_mini
 
-# Enable logging
-logger:
-  # Disable serial logging
-  baud_rate: 0
-
 external_components:
-  - source: github://TillFleisch/ESPHome-Philips-Smart-Coffee@main
+  - source: github://thiesgerken/esphome-philips-ep2231@main
+
+# The display UART occupies the pins the logger would use
+logger:
+  baud_rate: 0
 
 uart:
   # UART connected to the mainboard
-  - tx_pin: GPIO1
+  - id: uart_mainboard
+    tx_pin: GPIO1
     rx_pin: GPIO3
     baud_rate: 115200
-    id: uart_mainboard
 
   # UART connected to the display
-  - tx_pin: GPIO15
+  - id: uart_display
+    tx_pin: GPIO15
     rx_pin: GPIO13
     baud_rate: 115200
-    id: uart_display
 
 philips_series_2200:
+  id: philip
   display_uart: uart_display
   mainboard_uart: uart_mainboard
   power_pin: GPIO12
-  id: philip
-
-text_sensor:
-  - platform: philips_status_sensor
-    controller_id: philip
-    name: "Status"
 
 switch:
-  - platform: philips_power_switch
+  - platform: philips_series_2200
     controller_id: philip
+    id: power
     name: "Power"
     icon: mdi:coffee-maker
 
-button:
-  - platform: philips_action_button
+text_sensor:
+  - platform: philips_series_2200
     controller_id: philip
-    action: MAKE_COFFEE
-    name: "Make Coffee"
+    for: overall
+    id: status
+    name: "Status"
+
+  # The individual LEDs are available as their own sensors, e.g.
+  - platform: philips_series_2200
+    controller_id: philip
+    for: led_water_empty
+    name: "Wasser leer"
+
+number:
+  - platform: philips_series_2200
+    controller_id: philip
+    type: beans
+    name: "Bohnenmenge"
+
+  - platform: philips_series_2200
+    controller_id: philip
+    type: size
+    name: "Tassengröße"
+
+button:
+  - platform: philips_series_2200
+    controller_id: philip
+    action: coffee
+    id: make_coffee_button
+    name: "Kaffee"
     icon: mdi:coffee
 
-  - platform: philips_action_button
+  - platform: philips_series_2200
     controller_id: philip
-    action: HOT_WATER
-    name: "Select Hot Water"
+    action: hot_water
+    name: "Heißes Wasser"
     icon: mdi:tea
 
-  - platform: philips_action_button
+  - platform: philips_series_2200
     controller_id: philip
-    action: START_STOP
-    name: "Select play/pause"
+    action: start_stop
+    name: "Start/Stop"
     icon: mdi:play-pause
+
+  # Held down instead of tapped, which switches to pre-ground coffee
+  - platform: philips_series_2200
+    controller_id: philip
+    action: beans
+    long_press: true
+    name: "Pulverkaffee"
+    icon: mdi:coffee-outline

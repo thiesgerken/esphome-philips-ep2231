@@ -1,75 +1,147 @@
-# ESPHome Smart Coffee (Philips Series 2200)
+# ☕ ESPHome Philips EP2231
 
-Forked from <https://github.com/TillFleisch/ESPHome-Philips-Smart-Coffee> (Thank you for figuring out the protocol!).
-Adapted to my needs & opinions (e.g. my machine has a latte go instead of a steamer).
+> Home Assistant control for a Philips Series 2200 (EP2231) coffee machine, over ESPHome.
 
-This project integrates a Philips Series 2200 Coffee Machine into into [Home Assistant](https://home-assistant.io) through [ESPHome](https://esphome.io).
-This component has been developed on a Philips EP2220 and an ESP8266.
+![ESPHome](https://img.shields.io/badge/ESPHome-2023.2%2B-blue)
+![Model](https://img.shields.io/badge/model-EP2231-6f4e37)
+![Board](https://img.shields.io/badge/board-Wemos%20D1%20Mini-lightgrey)
+![Hard fork](https://img.shields.io/badge/hard%20fork-TillFleisch%2FESPHome--Philips--Smart--Coffee-informational)
 
-This component provides a `Power Switch`, a `Status sensor` and various `Buttons` which simulate user input.
-The `Power Switch` can be used to turn on the coffee machine with and without a cleaning cycle during startup.
+An ESP is spliced into the ribbon cable between the machine's mainboard and its display unit, where it can read, drop and inject messages. That gives Home Assistant a power switch, the machine status, the bean/size settings, and buttons for every front-panel key.
 
 ![Provided entities in HomeAssistant](ha_entities.png)
 
-You might break/brick your coffee machine by modifying it in any way, shape or form. If you want to use this component, do so at your own risk.
+> [!WARNING]
+> Opening the machine voids the warranty, and you might break or brick it. Do this at your own risk.
 
-## Ideas for Improvement
+## 🙏 Credit
 
-- use a non-cleaning startup automatically if the machine has been turned off only for a short time period
-- figure out how to go back to the main menu from drink selection
-- integrate calc'n'clean & descaling LED status, and properly test the actions
-- figure out how the checksum calculation actually works; messages are currently validated by comparing the trailing two bytes against the previous message, which works because the mainboard repeats every frame
-- if someone else wants to use this: proper i18n; the status texts are localized to german at the moment (because that's the way I like to have it in the HA UI)
-- estimate power consumption
+All of this rests on [TillFleisch/ESPHome-Philips-Smart-Coffee](https://github.com/TillFleisch/ESPHome-Philips-Smart-Coffee), which reverse-engineered the bus protocol and built the man-in-the-middle approach in the first place. Thank you for figuring out the protocol — this repository would not exist without it.
 
-## Configuration variables
+## 🍴 Scope, and how this differs
 
-A example configuration can be found [here](example.yaml)
+This is a **hard fork**, not a downstream branch. It diverged at [`6602c04`](https://github.com/TillFleisch/ESPHome-Philips-Smart-Coffee/commit/6602c047c5be34efb0a6ec42af0bb32b5c4a3d49) (2023-02-28) and was rewritten from there; no file is shared unchanged, and nothing here is intended to go back upstream.
 
-## Philips Series 2200
+The scope is deliberately narrow: **one machine, one language**. It targets a Philips EP2231 (Series 2200 with a LatteGo instead of a steam wand) on a Wemos D1 Mini, and reports status in German, because that is what runs in my kitchen. If you have a different model, or want English, **use upstream** — it supports several models and four languages, and is the better starting point for anything that is not exactly this setup.
 
-- **id**(**Required**, string):Controller ID which will be used for entity configuration.
-- **display_uart**(**Required**, string): ID of the UART-Component connected to the display unit
-- **mainboard_uart**(**Required**, string): ID of the UART-Component connected to the mainboard
-- **power_pin**(**Required**, [Pin](https://esphome.io/guides/configuration-types.html#config-pin)): Pin to which the MOSFET/Transistor is connected. This pin is used to temporarily turn of the display unit.
+Comparison as of upstream [`d0ed704`](https://github.com/TillFleisch/ESPHome-Philips-Smart-Coffee/commit/d0ed704) (2026-02-15):
 
-## Philips Power switch
+|                     | This fork                                                                            | Upstream                                                            |
+| ------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Models              | EP2231 only, hardcoded                                                               | EP2220, EP2235, EP3243, EP3246 via `model:`                         |
+| Language            | German only, hardcoded                                                               | `language:` — en-US, de-DE, it-IT, hu-HU                            |
+| Status sensors      | Overall status **plus 11 individual LED sensors** (`for: led_beans`, `led_error`, …) | One overall status sensor                                           |
+| Buttons             | 9 actions, `long_press` for secondary functions                                      | `SELECT_*`/`MAKE_*` pairs for 7 drinks, milk, play/pause            |
+| Bean & size numbers | `beans` and `size`, platform is optional                                             | `beans`, `size`, `milk`, with a per-drink `source:`                 |
+| Tuning options      | None — sensible values are compiled in                                               | `invert_power_pin`, `power_trip_delay`, `power_message_repetitions` |
+| Message validation  | Documented linear checksum, see [`protocol.md`](protocol.md)                         | Trailing bytes compared against the previous frame                  |
 
-- **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
-- **clean**(**Optional**: boolean): If set to true the machine will perform a cleaning cycle during startup. Otherwise the machine will power on without cleaning. Defaults to `true`.
-- All other options from [Switch](https://esphome.io/components/switch/index.html#config-switch)
+Two behavioural differences worth knowing:
 
-## Philips Action Button
+- **The bridge never stalls.** The display power trip and the long-press injection complete from `loop()` instead of blocking it, so mainboard frames are not dropped while either is in progress.
+- **Power state follows the mainboard**, not the display. The mainboard only ever answers display polls, so its traffic is the more direct signal that the machine is awake.
 
-- **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
-- **action**(**Required**, int): The action performed by this button. Select one of `COFFEE`, `ESPRESSO`, `HOT_WATER`, `CAPPUCCINO`, `BEANS`, `SIZE`, `AQUA_CLEAN`, `CALC_CLEAN`, `START_STOP`.
-- **long_press**(**Optional**, boolean): If set to true the button is held down instead of tapped. That is how the machine reaches its secondary functions, e.g. `BEANS` with `long_press` switches to pre-ground coffee. Defaults to `false`.
-- All other options from [Button](https://esphome.io/components/button/index.html#config-button)
+Beyond the protocol notes, the EP2231 command set and the checksum findings in [`protocol.md`](protocol.md) are this fork's own work.
 
-## Philips Status Sensor
+## 🚀 Quickstart
 
-- **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
-- All other options from [Text Sensor](https://esphome.io/components/text_sensor/index.html#config-text-sensor)
+Add the component and wire up the two UARTs. A complete, working configuration is in [`example.yaml`](example.yaml); the short version:
 
-## Philips Beverage Setting
+```yaml
+external_components:
+  - source: github://thiesgerken/esphome-philips-ep2231@main
 
-Reports and sets the bean amount/cup size of whatever beverage is selected on the machine right now.
-The value ranges from `1` to `3` and is unavailable whenever the corresponding led is dark, i.e. outside the selection screen.
-Writing a value presses the button until the machine has cycled to that level.
+# The display UART occupies the pins the logger would use
+logger:
+  baud_rate: 0
 
-- **controller_id**(**Required**, string): The Philips Series 2200-Controller to which this entity belongs
-- **type**(**Required**, string): Setting controlled by this entity, either `BEANS` or `SIZE`.
-- All other options from [Number](https://esphome.io/components/number/index.html#config-number)
+uart:
+  - id: uart_mainboard
+    tx_pin: GPIO1
+    rx_pin: GPIO3
+    baud_rate: 115200
+  - id: uart_display
+    tx_pin: GPIO15
+    rx_pin: GPIO13
+    baud_rate: 115200
 
-# Fully automated coffee
+philips_series_2200:
+  id: philip
+  display_uart: uart_display
+  mainboard_uart: uart_mainboard
+  power_pin: GPIO12
 
-The following script can be used to make a fully automated cup of coffee.
-The power switch used in this case does not perform a cleaning cycle.
-The cleaning check is required since after power loss the machine always cleans.
-This script will only continue to brew coffee under 2 conditions:
+switch:
+  - platform: philips_series_2200
+    controller_id: philip
+    name: "Power"
+    icon: mdi:coffee-maker
 
-- There was no cleaning cycle during start-up
-- A Mug is present
+text_sensor:
+  - platform: philips_series_2200
+    controller_id: philip
+    for: overall
+    name: "Status"
+
+button:
+  - platform: philips_series_2200
+    controller_id: philip
+    action: coffee
+    name: "Kaffee"
+```
+
+## ⚙️ Configuration
+
+### `philips_series_2200`
+
+The hub component. Everything else refers back to it via `controller_id`.
+
+- **id** (**Required**, string): controller ID used by the entity configurations.
+- **display_uart** (**Required**, string): ID of the UART component connected to the display unit.
+- **mainboard_uart** (**Required**, string): ID of the UART component connected to the mainboard.
+- **power_pin** (**Required**, [Pin](https://esphome.io/guides/configuration-types.html#config-pin)): pin driving the MOSFET/transistor that cuts display power.
+
+### Power switch (`switch`)
+
+Turning it on injects a power-on command and then reboots the display, which otherwise does not notice that the machine woke up.
+
+- **controller_id** (**Required**, string)
+- **clean** (**Optional**, boolean): run a cleaning cycle during startup. Defaults to `true`.
+- All other options from [Switch](https://esphome.io/components/switch/index.html#config-switch).
+
+### Action buttons (`button`)
+
+- **controller_id** (**Required**, string)
+- **action** (**Required**, string): one of `coffee`, `espresso`, `hot_water`, `cappuccino`, `beans`, `size`, `aqua_clean`, `calc_clean`, `start_stop`.
+- **long_press** (**Optional**, boolean): hold the button instead of tapping it, which is how the machine reaches its secondary functions — `beans` with `long_press` switches to pre-ground coffee. Defaults to `false`.
+- All other options from [Button](https://esphome.io/components/button/index.html#config-button).
+
+### Status sensors (`text_sensor`)
+
+- **controller_id** (**Required**, string)
+- **for** (**Required**, string): what this sensor reports.
+  - `overall` — a single summarising state: `Aus`, `Bereit`, `Vorbereitung`, `Spült`, `Zubereitung (…)`, `<Getränk> ausgewählt (Größe & Stärke)`, `Wasser leer`, `Trester voll`, `Fehler`, `Unbekannt`.
+  - `led_espresso`, `led_coffee`, `led_cappuccino`, `led_hot_water` — `Aus`, `Gedimmt`, `An`, `Zwei Getränke`.
+  - `led_beans`, `led_size` — `Aus`, `Stufe 1`, `Stufe 2`, `Stufe 3`.
+  - `led_powder`, `led_water_empty`, `led_waste_full`, `led_error` — `An` or `Aus`.
+  - `led_start_stop` — `An`, `Aus` or `Blinkt`.
+- All other options from [Text Sensor](https://esphome.io/components/text_sensor/index.html#config-text-sensor).
+
+The individual LED sensors are the raw truth from the panel; `overall` is an interpretation layered on top and is what the automations below use.
+
+### Bean amount & cup size (`number`)
+
+Reports and sets the bean amount or cup size of whichever beverage is selected right now. The value ranges from `1` to `3` and is unavailable while the corresponding LED is dark, i.e. outside the selection screen. Writing a value presses the button until the machine has cycled to that level.
+
+- **controller_id** (**Required**, string)
+- **type** (**Required**, string): `beans` or `size`.
+- All other options from [Number](https://esphome.io/components/number/index.html#config-number).
+
+This platform is optional — leave it out of the configuration and it is not compiled in.
+
+## 🤖 Fully automated coffee
+
+The script below brews a cup unattended. The power switch it uses does not clean during startup; the cleaning check is still needed because the machine always cleans after a power loss. It only proceeds when there was no cleaning cycle and a mug is present.
 
 ```yaml
 script:
@@ -77,42 +149,38 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return id(status).state == "OFF";'
+            lambda: 'return id(status).state == "Aus";'
           then:
             - switch.turn_on: power
             - wait_until:
                 condition:
-                  lambda: 'return (id(status).state == "Idle") || (id(status).state == "Cleaning");'
+                  lambda: 'return (id(status).state == "Bereit") || (id(status).state == "Spült");'
                 timeout: 120s
             - if:
                 condition:
-                  lambda: 'return (id(status).state == "Idle") && id(mug_sensor).state;'
+                  lambda: 'return (id(status).state == "Bereit") && id(mug_sensor).state;'
                 then:
                   - delay: 5s
                   - button.press: make_coffee_button
           else:
             if:
               condition:
-                lambda: 'return (id(status).state == "Idle") && id(mug_sensor).state;'
+                lambda: 'return (id(status).state == "Bereit") && id(mug_sensor).state;'
               then:
                 - button.press: make_coffee_button
 ```
 
-# Wiring
+## 🔌 Wiring
 
-The coffee machines display unit is connected to the mainboard via a 8-pin ribbon cable with Picoflex connectors.
-The display is powered by the mainboard and the two units communicate using a serial bus.
-The ESP is placed in between this bus to perform a man-in-the-middle attack.
-The RX/TX lines are piped through the ESP such that messages can be read, intercepted and injected.
+The display unit is connected to the mainboard by an 8-pin ribbon cable with Picoflex connectors. The display is powered by the mainboard, and the two communicate over a serial bus. The ESP sits in the middle of that bus: the RX/TX lines are piped through it so messages can be read, intercepted and injected.
 
-When injecting a 'turn coffee machine on' command, the coffee machine does turn on, but the display unit does not. To circumvent this behavior we can re-boot the display unit by temporarily removing it's power. Thus the display will power on and operate normally. To perform this operation a transistor or MOSFET can be used.
+Injecting a "turn on" command wakes the machine but not the display, so the display is rebooted by briefly removing its power through a transistor or MOSFET — that is what `power_pin` drives.
 
-The following wiring guideline can be used to add a Wemos D1 Mini to the coffee machine. **The unlabeled wires should be connected without changes.**
+**Unlabeled wires should be connected straight through.**
+
 ![Wiring guide](wiring.png)
 
-The ribbon cable wires have the following functionalities.
-
-| Pin | Mainboard | Functionality                      |
+| Pin | Mainboard | Function                           |
 | --- | --------- | ---------------------------------- |
 | 0   | 5V        | 5V                                 |
 | 1   | GND       | GND                                |
@@ -120,24 +188,24 @@ The ribbon cable wires have the following functionalities.
 | 3   | unused    | unused                             |
 | 4   | TX/RX     | Messages from mainboard to display |
 | 5   | RX/TX     | Messages from display to mainboard |
-| 6   | 0V        | unknown - very noisy               |
+| 6   | 0V        | unknown — very noisy               |
 | 7   | 5V        |                                    |
 
-## Voltage regulation
+### Voltage regulation
 
-The Wemos D1 Mini has a built in Voltage regulator, thus connecting it to the 5V provided by the mainboard is no problem. If you use a different ESP Module/Board please make sure it is 5V tolerant or use a Voltage regulator. Otherwise you might release magic smoke.
+The Wemos D1 Mini has a built-in voltage regulator, so the 5V from the mainboard is fine. A different board must be 5V tolerant or get its own regulator — otherwise you release the magic smoke.
 
-# Communication protocol
+## 📡 Communication protocol
 
-More information on the communication protocol used by this component can be found [here](protocol.md).
+The bus protocol, the EP2231 command set, the machine identification bytes and what is known about the checksum are documented in [`protocol.md`](protocol.md).
 
-# Related Work
+## 🧯 Troubleshooting
 
-- [SmartPhilips2200](https://github.com/chris7topher/SmartPhilips2200) by [@chris7topher](https://github.com/chris7topher)
-  - The commands used in this Project are different. This is likely due to different model revisions.
+- Check the wiring first.
+- ESPHome's UART debug function shows the traffic in both directions and confirms the wiring is right.
+- Commands differ between models and revisions. If nothing responds, the command set is likely wrong for your machine — see [`protocol.md`](protocol.md) and the related work below.
 
-# Troubleshooting
+## Related work
 
-- Make sure your wiring is correct
-- The UART debug function can be used to analyze communication and verify correct wiring
-- The commands used by the display unit may be different between different revisions/models (see Related Work)
+- [TillFleisch/ESPHome-Philips-Smart-Coffee](https://github.com/TillFleisch/ESPHome-Philips-Smart-Coffee) — the original, and the right choice for any model other than an EP2231.
+- [SmartPhilips2200](https://github.com/chris7topher/SmartPhilips2200) by [@chris7topher](https://github.com/chris7topher) — uses different commands, likely a different model revision.
