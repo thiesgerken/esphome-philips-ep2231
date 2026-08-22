@@ -4,7 +4,6 @@
 
 ![ESPHome](https://img.shields.io/badge/ESPHome-2023.2%2B-blue)
 ![Model](https://img.shields.io/badge/model-EP2231-6f4e37)
-![Board](https://img.shields.io/badge/board-Wemos%20D1%20Mini-lightgrey)
 ![Hard fork](https://img.shields.io/badge/hard%20fork-TillFleisch%2FESPHome--Philips--Smart--Coffee-informational)
 
 An ESP is spliced into the ribbon cable between the machine's mainboard and its display unit, where it can read, drop and inject messages. That gives Home Assistant a power switch, the machine status, the bean/size settings, and buttons for every front-panel key.
