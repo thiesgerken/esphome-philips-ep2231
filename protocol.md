@@ -10,14 +10,62 @@ The messages were obtained by listening to the bus.
 
 ## Messages from the display to the mainboard
 
-All messages have the following structure:
+All messages are 12 bytes long. The length is not encoded but it also never changes.
 
-| Start Message | Content                                 | Checksum  |
-| ------------- | --------------------------------------- | --------- |
-| `D5     55`   | `00   01   02   00   02   00   00   00` | `11   36` |
+| Byte  | Purpose      | Detail                                                                                                                      |
+| ----- | ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| 0     | START        | always `D5`                                                                                                                 |
+| 1     | START        | always `55`                                                                                                                 |
+| 2     | INSTRUCTION  | `00` - idle/button press; `01` - power on without cleaning; `02` - power on with cleaning; `0A` - pre power on (beeps only) |
+| 3-6   | MACHINE      | identifies the machine, see below                                                                                           |
+| 7     | Drink button | `02` - espresso; `04` - hot water; `08` - coffee; `10` - steam/cappuccino                                                   |
+| 8     | Settings     | `02` - bean; `04` - size; `10` - aqua clean; `20` - calc clean                                                              |
+| 9     | Play/Pause   | `01` - pressed                                                                                                              |
+| 10-11 | checksum     |                                                                                                                             |
 
-The first 2 Bytes are always `D5 55`. The length of the message is not encoded but it also never changes.
-The last 2 Bytes are some sort of checksum. The rule for determining this checksum is not known.
+Byte 7 also carries `01` for the power button, which is how the power off message is encoded.
+
+### Machine identification
+
+Bytes 3-6 are constant for a given machine but differ between models. The mainboard latches
+them at power on and configures itself accordingly, so injecting the wrong ones leaves it
+configured for a different machine: on an EP2231 sent the EP2220 value, coffee and espresso
+still worked but hot water and cappuccino did not, for the rest of the session.
+
+| Machine         | Bytes 3-6     | Source                                                                                      |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------- |
+| EP2220 / EP2235 | `01 02 00 02` | upstream                                                                                    |
+| EP2231          | `01 02 00 03` | captured from the display                                                                   |
+| EP3243 / EP3246 | `01 03 00 0E` | upstream                                                                                    |
+| EP2220/10       | `00 00 03 02` | [upstream issue #90](https://github.com/TillFleisch/ESPHome-Philips-Smart-Coffee/issues/90) |
+
+Between the EP2220 and the EP2231 only byte 6 differs, but the EP2220/10 shows that the whole
+block varies, so treat it as one opaque machine identifier rather than a single variant byte.
+
+### Checksum
+
+The last 2 bytes are a 12-bit checksum, two 6-bit values. The algorithm is not known and does
+not appear to be a standard CRC.
+
+It is however **linear**: flipping a bit anywhere in the message always changes the checksum by
+the same fixed amount, independent of the rest of the message. Given one captured message, the
+checksum of another message is therefore
+
+```
+checksum(new) = checksum(captured) XOR (contributions of the changed bits)
+```
+
+The contributions can be read straight off the tables below by XOR-ing a command against the
+status request of the same machine. This is what the EP2231 table below was generated with; it
+reproduced all 21 checksums that were later measured, 12 of them from the EP3243 family which
+took no part in deriving the contributions.
+
+This is not the algorithm. It needs one measured message from a machine as an anchor, and it
+only covers bits that vary somewhere in the samples — bytes 3-6 are effectively unreachable
+this way, which is why a new machine has to be captured rather than computed. It also says
+nothing about the 19 byte mainboard-to-display frames.
+
+The messages listed below were captured on an EP2220.
 
 ### Power on message
 
@@ -79,7 +127,33 @@ The 9th byte is used to transmit the right hand side button group in a similar f
 
 ### Encoding simultaneous button presses
 
-This should be possible but determining the correct checksum is required.
+Possible: set both button bits and compute the checksum with the linear model described above.
+Untested on hardware.
+
+## EP2231 command set
+
+Captured from the display of an EP2231 (LatteGo). Same layout as the EP2220, bytes 3-6 are
+`01 02 00 03`. `Steam` is replaced by `Cappuccino`.
+
+| Message                   | Bytes                                 | Origin   |
+| ------------------------- | ------------------------------------- | -------- |
+| Status request            | `D5 55 00 01 02 00 03 00 00 00 3C 2B` | captured |
+| Pre power on              | `D5 55 0A 01 02 00 03 00 00 00 23 0F` | captured |
+| Power on without cleaning | `D5 55 01 01 02 00 03 00 00 00 08 3A` | captured |
+| Power on with cleaning    | `D5 55 02 01 02 00 03 00 00 00 15 08` | derived  |
+| Power off                 | `D5 55 00 01 02 00 03 01 00 00 30 26` | captured |
+| Espresso                  | `D5 55 00 01 02 00 03 02 00 00 24 30` | captured |
+| Hot water                 | `D5 55 00 01 02 00 03 04 00 00 0C 1C` | captured |
+| Coffee                    | `D5 55 00 01 02 00 03 08 00 00 14 01` | captured |
+| Cappuccino                | `D5 55 00 01 02 00 03 10 00 00 24 3B` | captured |
+| Bean                      | `D5 55 00 01 02 00 03 00 02 00 24 32` | captured |
+| Size                      | `D5 55 00 01 02 00 03 00 04 00 0D 18` | captured |
+| Aqua clean                | `D5 55 00 01 02 00 03 00 10 00 20 2B` | derived  |
+| Calc clean                | `D5 55 00 01 02 00 03 00 20 00 05 2A` | derived  |
+| Play/Pause                | `D5 55 00 01 02 00 03 00 00 01 34 2F` | derived  |
+
+The display picks the power on variant itself: it sends `01` when the machine was on recently
+and `02` after it has been off for a while.
 
 ## Messages from the mainboard to the display
 
