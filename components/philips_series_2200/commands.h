@@ -9,11 +9,12 @@
 namespace esphome {
 namespace philips_series_2200 {
 
-// Byte 6 identifies the machine variant. 0x02 is an EP2220 with a steam wand;
-// this machine is an EP2231 with a LatteGo and uses 0x03. The mainboard latches
-// it at power on, so sending 0x02 left the water and milk path configured for a
-// steam machine for the whole session -- coffee worked, hot water and
-// cappuccino did not, no matter which button was pressed afterwards.
+// Bytes 3-6 identify the machine. This is an EP2231 with a LatteGo and uses
+// 01 02 00 03; the inherited table carried the EP2220 value ending in 02. The
+// mainboard latches it at power on, so the wrong value left the water and milk
+// path configured for a steam wand machine for the whole session -- coffee
+// worked, hot water and cappuccino did not, no matter which button was pressed
+// afterwards. See protocol.md for the other machines.
 //
 // The trailing two bytes are a 12-bit checksum whose algorithm is unknown, but
 // the map is linear: flipping a message bit always flips the checksum by the
