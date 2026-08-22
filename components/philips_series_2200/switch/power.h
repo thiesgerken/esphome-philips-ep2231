@@ -59,6 +59,10 @@ private:
   GPIOPin *power_pin_;
   /// @brief True if the coffee machine is supposed to clean
   bool cleaning_ = true;
+  /// @brief true while the display is held without power
+  bool tripping_ = false;
+  /// @brief time at which the display power was cut
+  uint32_t trip_start_ = 0;
 };
 
 } // namespace philips_power_switch
