@@ -96,7 +96,8 @@ void PhilipsSeries2200::loop() {
 
   // Pipe display to mainboard
   if (display_uart_.available()) {
-    uint8_t size = std::min(display_uart_.available(), (size_t)BUFFER_SIZE);
+    uint8_t size = std::min((size_t)display_uart_.available(),
+                            (size_t)BUFFER_SIZE);
     display_uart_.read_array(buffer, size);
 
     // While a button is held down the display keeps reporting "no button
@@ -144,7 +145,7 @@ void PhilipsSeries2200::loop() {
 
   // Pipe to display
   if (mainboard_uart_.available()) {
-    uint8_t size = std::min(mainboard_uart_.available(), (size_t)19);
+    uint8_t size = std::min((size_t)mainboard_uart_.available(), (size_t)19);
 
     mainboard_uart_.read_array(buffer, size);
     display_uart_.write_array(buffer, size);
@@ -164,7 +165,7 @@ void PhilipsSeries2200::loop() {
       last_message_from_mainboard_time_ = millis();
 
       for (philips_power_switch::Power *power_switch : power_switches_)
-        power_switch->publish_state(true);
+        power_switch->update_state(true);
 
       // NOTE: would be nice to figure out how the checksum works. Until then:
       // the mainboard repeats every frame, so a frame whose trailing two bytes
@@ -191,7 +192,7 @@ void PhilipsSeries2200::loop() {
   if (millis() - last_message_from_mainboard_time_ > POWER_STATE_TIMEOUT) {
     // Update power switches
     for (philips_power_switch::Power *power_switch : power_switches_)
-      power_switch->publish_state(false);
+      power_switch->update_state(false);
 
     // Update status sensors
     for (philips_status_sensor::StatusSensor *status_sensor : status_sensors_)
