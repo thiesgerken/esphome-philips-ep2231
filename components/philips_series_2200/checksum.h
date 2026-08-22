@@ -1,170 +1,82 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace esphome {
 namespace philips_series_2200 {
 namespace checksum {
 
-/// @brief marks a weight that has never been observed and cannot be computed
-constexpr uint16_t UNKNOWN = 0xFFFF;
-
-/// @brief checksum of a frame whose content bytes are all zero
-constexpr uint16_t FRAME_CONSTANT = 0xE4D;
-
-// The checksum is linear: the XOR of FRAME_CONSTANT and one fixed 12-bit weight
-// per content byte, where the weight depends on the byte's distance from the
-// last content byte rather than on its offset from the start of the frame. The
-// weights below cover every value the display is known to show; see protocol.md
-// for how they were obtained and why this is not a CRC.
-//
-// Columns are the values 0x01, 0x03, 0x07 and 0x38. Rows are the distance.
-constexpr uint16_t WEIGHTS[15][4] = {
-    /*  0 */ {0x204, UNKNOWN, 0xE5C, UNKNOWN},
-    /*  1 */ {0x30C, 0x515, 0x966, 0x3E3},
-    /*  2 */ {0x30D, 0x516, 0x921, 0x05B},
-    /*  3 */ {0xB5D, 0xDE6, UNKNOWN, UNKNOWN},
-    /*  4 */ {UNKNOWN, 0x3B7, 0xD59, UNKNOWN},
-    /*  5 */ {UNKNOWN, UNKNOWN, 0x432, 0xCC8},
-    /*  6 */ {0x8A2, UNKNOWN, 0x446, 0x232},
-    /*  7 */ {0xD11, 0x772, 0x1B1, 0x056},
-    /*  8 */ {UNKNOWN, UNKNOWN, 0xAAC, 0xFF7},
-    /*  9 */ {UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN},
-    /* 10 */ {UNKNOWN, 0xF9E, 0xBCA, UNKNOWN},
-    /* 11 */ {UNKNOWN, 0x9C1, 0x482, 0x590},
-    /* 12 */ {UNKNOWN, 0xA73, 0x0B2, UNKNOWN},
-    /* 13 */ {UNKNOWN, 0xA23, 0x05C, 0x52C},
-    /* 14 */ {0xFEB, UNKNOWN, UNKNOWN, UNKNOWN},
-};
+// CRC-16/CCITT over the whole message, header included. The 16 bit result is
+// sent as two 6 bit values, low byte first, each carrying the top six bits of
+// its byte, so 4 bits never make it onto the wire. One set of parameters covers
+// both directions and every machine; see protocol.md.
+constexpr uint16_t POLYNOMIAL = 0x1021;
+constexpr uint16_t INITIAL_VALUE = 0xAAAA;
 
 /**
- * @brief Looks up the checksum weight of a single content byte.
+ * @brief Computes the checksum of a message.
  *
- * @param distance Distance from the last content byte
- * @param value Byte value
- * @param weight Receives the weight
- * @return false if this value has never been observed at this distance, which
- * for a frame from the mainboard means it is damaged
+ * @param message Message without its two checksum bytes
+ * @param length Length of that part
  */
-constexpr bool lookup(uint8_t distance, uint8_t value, uint16_t *weight) {
-  const uint16_t *row = WEIGHTS[distance];
+constexpr uint16_t compute(const uint8_t *message, size_t length) {
+  uint16_t crc = INITIAL_VALUE;
 
-  switch (value) {
-  case 0x00:
-    *weight = 0;
-    return true;
-  case 0x01:
-    *weight = row[0];
-    break;
-  case 0x03:
-    *weight = row[1];
-    break;
-  case 0x07:
-    *weight = row[2];
-    break;
-  case 0x38:
-    *weight = row[3];
-    break;
-  case 0x3F:
-    // The display never sends 0x3F where 0x07 and 0x38 are not both known, but
-    // the table is written by hand, so do not trust that.
-    if (row[2] == UNKNOWN || row[3] == UNKNOWN)
-      return false;
-    *weight = row[2] ^ row[3];
-    return true;
-  default:
-    return false;
+  for (size_t i = 0; i < length; i++) {
+    crc ^= (uint16_t)(message[i] << 8);
+
+    for (uint8_t bit = 0; bit < 8; bit++)
+      crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ POLYNOMIAL)
+                           : (uint16_t)(crc << 1);
   }
 
-  return *weight != UNKNOWN;
+  return crc;
 }
-
-/// @brief True for the byte values the display is known to use
-constexpr bool known_value(uint8_t value) {
-  return value == 0x00 || value == 0x01 || value == 0x03 || value == 0x07 ||
-         value == 0x38 || value == 0x3F;
-}
-
-enum FrameCheck {
-  /// @brief checksum recomputed and matches
-  FRAME_VALID,
-  /// @brief carries a value the display uses whose weight was never measured
-  FRAME_UNVERIFIABLE,
-  /// @brief checksum mismatch, or a byte the display would never send
-  FRAME_DAMAGED,
-};
 
 /**
- * @brief Checks the checksum of a 19 byte frame from the mainboard.
+ * @brief True if a message carries the checksum it should.
  *
- * A missing weight must not count as damage. The table is built from captures,
- * so a state nobody has recorded yet would otherwise make every frame fail for
- * as long as the machine stays in it, freezing every sensor. Those frames are
- * reported separately so they can be used anyway and logged.
- *
- * @param frame Frame including header and checksum
+ * @param message Message including header and checksum
+ * @param length Full length of the message
  */
-constexpr FrameCheck check_frame(const uint8_t *frame) {
-  uint16_t sum = FRAME_CONSTANT;
-  bool complete = true;
+constexpr bool valid(const uint8_t *message, size_t length) {
+  const uint16_t crc = compute(message, length - 2);
 
-  for (uint8_t i = 2; i <= 16; i++) {
-    if (!known_value(frame[i]))
-      return FRAME_DAMAGED;
-
-    uint16_t weight = 0;
-    if (lookup(16 - i, frame[i], &weight))
-      sum ^= weight;
-    else
-      complete = false;
-  }
-
-  if (!complete)
-    return FRAME_UNVERIFIABLE;
-
-  return sum == (uint16_t)((frame[17] << 6) | frame[18]) ? FRAME_VALID
-                                                         : FRAME_DAMAGED;
+  return message[length - 2] == (uint8_t)((crc & 0xFF) >> 2) &&
+         message[length - 1] == (uint8_t)((crc >> 8) >> 2);
 }
 
 namespace {
-// Captured frames, verified at compile time so a typo in the table cannot ship.
-// FRAME_IDLE is upstream's EP2220 capture, which doubles as a check that the
-// weights really are machine independent.
-constexpr uint8_t FRAME_OFF[19] = {0xD5, 0x55, 0, 0, 0, 0, 0, 0,    0,   0,
-                                   0,    0,    0, 0, 0, 0, 0, 0x39, 0x0D};
+// Captured messages, checked at compile time. FRAME_IDLE and COMMAND_EP3241 are
+// from other machines, so they also pin down that the parameters do not vary
+// per machine.
+constexpr uint8_t FRAME_OFF[19] = {0xD5, 0x55, 0, 0, 0, 0, 0,    0,   0, 0,
+                                   0,    0,    0, 0, 0, 0, 0x39, 0x0D};
 constexpr uint8_t FRAME_IDLE[19] = {0xD5, 0x55, 0x00, 0x07, 0x07, 0x07, 0x07,
                                     0,    0,    0,    0,    0,    0,    0,
                                     0,    0,    0,    0x07, 0x2B};
 constexpr uint8_t FRAME_BREWING[19] = {0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00,
                                        0x00, 0x3F, 0x07, 0x38, 0x07, 0x00, 0x00,
                                        0x00, 0x00, 0x07, 0x19, 0x39};
-constexpr uint8_t FRAME_POWDER[19] = {0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00,
-                                      0x00, 0x00, 0x38, 0x38, 0x07, 0x00, 0x00,
-                                      0x00, 0x00, 0x07, 0x0B, 0x05};
+constexpr uint8_t FRAME_TWO_COFFEES[19] = {
+    0xD5, 0x55, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x38, 0x07,
+    0x38, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x1B};
 constexpr uint8_t FRAME_CORRUPT[19] = {0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00,
-                                       0x00, 0x00, 0x38, 0x38, 0x07, 0x00, 0x00,
-                                       0x00, 0x00, 0x07, 0x0B, 0x04};
-// byte 7 has never been seen lit, so its weights are unmeasured
-constexpr uint8_t FRAME_UNMEASURED[19] = {
-    0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00, 0x07, 0x00, 0x38,
-    0x38, 0x07, 0x00, 0x00, 0x00, 0x00, 0x07, 0x0B, 0x05};
-// 0x04 is not a value the display uses
-constexpr uint8_t FRAME_GARBAGE[19] = {0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00,
-                                       0x00, 0x00, 0x38, 0x04, 0x07, 0x00, 0x00,
-                                       0x00, 0x00, 0x07, 0x0B, 0x05};
+                                       0x00, 0x3F, 0x07, 0x38, 0x07, 0x00, 0x00,
+                                       0x00, 0x00, 0x07, 0x19, 0x38};
+constexpr uint8_t COMMAND_ESPRESSO[12] = {0xD5, 0x55, 0x00, 0x01, 0x02, 0x00,
+                                          0x03, 0x02, 0x00, 0x00, 0x24, 0x30};
+constexpr uint8_t COMMAND_EP3241[12] = {0xD5, 0x55, 0x00, 0x01, 0x03, 0x00,
+                                        0x12, 0x08, 0x00, 0x00, 0x38, 0x0B};
 
-static_assert(check_frame(FRAME_OFF) == FRAME_VALID, "rejects a valid frame");
-static_assert(check_frame(FRAME_IDLE) == FRAME_VALID, "rejects a valid frame");
-static_assert(check_frame(FRAME_BREWING) == FRAME_VALID,
-              "rejects a valid frame");
-static_assert(check_frame(FRAME_POWDER) == FRAME_VALID,
-              "rejects a valid frame");
-static_assert(check_frame(FRAME_CORRUPT) == FRAME_DAMAGED,
-              "accepts a damaged frame");
-static_assert(check_frame(FRAME_UNMEASURED) == FRAME_UNVERIFIABLE,
-              "an unmeasured weight must not count as damage");
-static_assert(check_frame(FRAME_GARBAGE) == FRAME_DAMAGED,
-              "accepts a value the display never sends");
+static_assert(valid(FRAME_OFF, 19), "rejects a captured frame");
+static_assert(valid(FRAME_IDLE, 19), "rejects a captured frame");
+static_assert(valid(FRAME_BREWING, 19), "rejects a captured frame");
+static_assert(valid(FRAME_TWO_COFFEES, 19), "rejects a captured frame");
+static_assert(!valid(FRAME_CORRUPT, 19), "accepts a damaged frame");
+static_assert(valid(COMMAND_ESPRESSO, 12), "rejects a captured command");
+static_assert(valid(COMMAND_EP3241, 12), "rejects a captured command");
 } // namespace
 
 } // namespace checksum
