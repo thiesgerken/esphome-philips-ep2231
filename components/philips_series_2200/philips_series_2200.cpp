@@ -167,7 +167,21 @@ void PhilipsSeries2200::loop() {
       for (philips_power_switch::Power *power_switch : power_switches_)
         power_switch->publish_state(true);
 
-      if (checksum::valid_frame(buffer)) {
+      checksum::FrameCheck check = checksum::check_frame(buffer);
+      if (check == checksum::FRAME_UNVERIFIABLE &&
+          !std::equal(buffer, buffer + 19, last_unverifiable_)) {
+        std::copy_n(buffer, 19, last_unverifiable_);
+        std::string res = "LED state with an unmeasured checksum weight, using "
+                          "it unchecked. Please report: ";
+        char hex[5];
+        for (size_t i = 0; i < size; i++) {
+          sprintf(hex, "%02X ", buffer[i]);
+          res += hex;
+        }
+        ESP_LOGW(TAG, res.c_str());
+      }
+
+      if (check != checksum::FRAME_DAMAGED) {
         for (philips_status_sensor::StatusSensor *status_sensor :
              status_sensors_)
           status_sensor->update_status(buffer, size);

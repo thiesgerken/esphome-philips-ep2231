@@ -96,6 +96,9 @@ private:
   long last_message_from_display_time_ = 0;
   long last_message_from_mainboard_time_ = 0;
   long last_power_update_ = 0;
+  /// @brief last frame reported as unverifiable, so the warning is not repeated
+  /// for every frame while the machine sits in that state
+  uint8_t last_unverifiable_[19] = {0};
 
   /// @brief reference to uart connected to the display unit
   uart::UARTDevice display_uart_;

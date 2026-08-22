@@ -79,22 +79,51 @@ constexpr bool lookup(uint8_t distance, uint8_t value, uint16_t *weight) {
   return *weight != UNKNOWN;
 }
 
+/// @brief True for the byte values the display is known to use
+constexpr bool known_value(uint8_t value) {
+  return value == 0x00 || value == 0x01 || value == 0x03 || value == 0x07 ||
+         value == 0x38 || value == 0x3F;
+}
+
+enum FrameCheck {
+  /// @brief checksum recomputed and matches
+  FRAME_VALID,
+  /// @brief carries a value the display uses whose weight was never measured
+  FRAME_UNVERIFIABLE,
+  /// @brief checksum mismatch, or a byte the display would never send
+  FRAME_DAMAGED,
+};
+
 /**
- * @brief Verifies the checksum of a 19 byte frame from the mainboard.
+ * @brief Checks the checksum of a 19 byte frame from the mainboard.
+ *
+ * A missing weight must not count as damage. The table is built from captures,
+ * so a state nobody has recorded yet would otherwise make every frame fail for
+ * as long as the machine stays in it, freezing every sensor. Those frames are
+ * reported separately so they can be used anyway and logged.
  *
  * @param frame Frame including header and checksum
  */
-constexpr bool valid_frame(const uint8_t *frame) {
+constexpr FrameCheck check_frame(const uint8_t *frame) {
   uint16_t sum = FRAME_CONSTANT;
+  bool complete = true;
 
   for (uint8_t i = 2; i <= 16; i++) {
+    if (!known_value(frame[i]))
+      return FRAME_DAMAGED;
+
     uint16_t weight = 0;
-    if (!lookup(16 - i, frame[i], &weight))
-      return false;
-    sum ^= weight;
+    if (lookup(16 - i, frame[i], &weight))
+      sum ^= weight;
+    else
+      complete = false;
   }
 
-  return sum == (uint16_t)((frame[17] << 6) | frame[18]);
+  if (!complete)
+    return FRAME_UNVERIFIABLE;
+
+  return sum == (uint16_t)((frame[17] << 6) | frame[18]) ? FRAME_VALID
+                                                         : FRAME_DAMAGED;
 }
 
 namespace {
@@ -115,15 +144,27 @@ constexpr uint8_t FRAME_POWDER[19] = {0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00,
 constexpr uint8_t FRAME_CORRUPT[19] = {0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00,
                                        0x00, 0x00, 0x38, 0x38, 0x07, 0x00, 0x00,
                                        0x00, 0x00, 0x07, 0x0B, 0x04};
+// byte 7 has never been seen lit, so its weights are unmeasured
+constexpr uint8_t FRAME_UNMEASURED[19] = {
+    0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00, 0x07, 0x00, 0x38,
+    0x38, 0x07, 0x00, 0x00, 0x00, 0x00, 0x07, 0x0B, 0x05};
+// 0x04 is not a value the display uses
+constexpr uint8_t FRAME_GARBAGE[19] = {0xD5, 0x55, 0x00, 0x00, 0x00, 0x07, 0x00,
+                                       0x00, 0x00, 0x38, 0x04, 0x07, 0x00, 0x00,
+                                       0x00, 0x00, 0x07, 0x0B, 0x05};
 
-static_assert(valid_frame(FRAME_OFF), "checksum table rejects a valid frame");
-static_assert(valid_frame(FRAME_IDLE), "checksum table rejects a valid frame");
-static_assert(valid_frame(FRAME_BREWING),
-              "checksum table rejects a valid frame");
-static_assert(valid_frame(FRAME_POWDER),
-              "checksum table rejects a valid frame");
-static_assert(!valid_frame(FRAME_CORRUPT),
-              "checksum table accepts a damaged frame");
+static_assert(check_frame(FRAME_OFF) == FRAME_VALID, "rejects a valid frame");
+static_assert(check_frame(FRAME_IDLE) == FRAME_VALID, "rejects a valid frame");
+static_assert(check_frame(FRAME_BREWING) == FRAME_VALID,
+              "rejects a valid frame");
+static_assert(check_frame(FRAME_POWDER) == FRAME_VALID,
+              "rejects a valid frame");
+static_assert(check_frame(FRAME_CORRUPT) == FRAME_DAMAGED,
+              "accepts a damaged frame");
+static_assert(check_frame(FRAME_UNMEASURED) == FRAME_UNVERIFIABLE,
+              "an unmeasured weight must not count as damage");
+static_assert(check_frame(FRAME_GARBAGE) == FRAME_DAMAGED,
+              "accepts a value the display never sends");
 } // namespace
 
 } // namespace checksum
