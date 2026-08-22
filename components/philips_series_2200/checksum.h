@@ -51,8 +51,8 @@ namespace {
 // Captured messages, checked at compile time. FRAME_IDLE and COMMAND_EP3241 are
 // from other machines, so they also pin down that the parameters do not vary
 // per machine.
-constexpr uint8_t FRAME_OFF[19] = {0xD5, 0x55, 0, 0, 0, 0, 0,    0,   0, 0,
-                                   0,    0,    0, 0, 0, 0, 0x39, 0x0D};
+constexpr uint8_t FRAME_OFF[19] = {0xD5, 0x55, 0, 0, 0, 0, 0, 0,    0,   0,
+                                   0,    0,    0, 0, 0, 0, 0, 0x39, 0x0D};
 constexpr uint8_t FRAME_IDLE[19] = {0xD5, 0x55, 0x00, 0x07, 0x07, 0x07, 0x07,
                                     0,    0,    0,    0,    0,    0,    0,
                                     0,    0,    0,    0x07, 0x2B};
