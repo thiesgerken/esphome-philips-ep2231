@@ -2,6 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import button
 from esphome.const import CONF_ID
+
 from .. import CONTROLLER_ID, PhilipsSeries2200, philips_series_2200_ns
 
 DEPENDENCIES = ["philips_series_2200"]
@@ -10,7 +11,9 @@ CONF_ACTION = "action"
 CONF_LONG_PRESS = "long_press"
 
 philips_action_button_ns = philips_series_2200_ns.namespace("philips_action_button")
-ActionButton = philips_action_button_ns.class_("ActionButton", button.Button, cg.Component)
+ActionButton = philips_action_button_ns.class_(
+    "ActionButton", button.Button, cg.Component
+)
 
 Action = philips_action_button_ns.enum("ActionButton")
 ACTIONS = {
@@ -25,14 +28,18 @@ ACTIONS = {
     "start_stop": Action.START_STOP,
 }
 
-CONFIG_SCHEMA = button.button_schema(ActionButton).extend(
-    {
-        cv.GenerateID(): cv.declare_id(ActionButton),
-        cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
-        cv.Required(CONF_ACTION): cv.enum(ACTIONS, lower=True, space="_"),
-        cv.Optional(CONF_LONG_PRESS, default=False): cv.boolean,
-    }
-).extend(cv.COMPONENT_SCHEMA)
+CONFIG_SCHEMA = (
+    button.button_schema(ActionButton)
+    .extend(
+        {
+            cv.GenerateID(): cv.declare_id(ActionButton),
+            cv.Required(CONTROLLER_ID): cv.use_id(PhilipsSeries2200),
+            cv.Required(CONF_ACTION): cv.enum(ACTIONS, lower=True, space="_"),
+            cv.Optional(CONF_LONG_PRESS, default=False): cv.boolean,
+        }
+    )
+    .extend(cv.COMPONENT_SCHEMA)
+)
 
 
 async def to_code(config):

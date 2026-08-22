@@ -49,120 +49,70 @@ variant byte. All messages behind this table are collected in [captures.csv](cap
 
 ### Checksum
 
-The last 2 bytes are a 12-bit checksum, two 6-bit values. Throughout this section a checksum is
-written as a single number, `(byte[n-2] << 6) | byte[n-1]`.
-
-The checksum is **linear over GF(2)**: it is the XOR of a constant and one fixed 12-bit weight
-per byte value present in the message. Flipping a bit anywhere always changes the checksum by
-the same amount, independent of everything else.
-
-The weight of a byte depends on its **distance from the end of the message**, not on its offset
-from the start, and **both directions share one weight table**. That is what makes the model
-usable: the 19 byte mainboard frames and the 12 byte display commands constrain each other.
-The alignment was found by fitting both directions separately and comparing:
-
-| Distance from end | Byte value | From the display commands | From the mainboard frames |
-| ----------------- | ---------- | ------------------------- | ------------------------- |
-| 1                 | `07`       | `966`                     | `966`                     |
-| 1                 | `38`       | `3E3`                     | `3E3`                     |
-| 2                 | `38`       | `05B`                     | `05B`                     |
-
-#### Weight table
-
-Distance `d` counts back from the last content byte (the byte before the checksum), so `d = 0`
-is byte 9 of a display command and byte 16 of a mainboard frame. Blank means that value has
-never been observed at that distance, and its weight is unknown.
-
-| d   | `01`  | `02`  | `03`  | `04`  | `07`  | `08`  | `0E`  | `10`  | `12`  | `20`  | `38`  | `3F`  |
-| --- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
-| 0   | `204` |       |       |       | `E5C` |       |       |       |       |       |       |       |
-| 1   | `30C` | `619` | `515` | `C73` | `966` | `AA2` | `0C8` | `700` | `119` | `E41` | `3E3` | `A85` |
-| 2   | `30D` | `61B` | `516` | `C37` | `921` | `A2A` | `006` | `610` | `00B` | `C61` | `05B` | `97A` |
-| 3   | `B5D` | `6BB` | `DE6` |       |       |       |       |       |       |       |       |       |
-| 4   |       |       | `3B7` | `EEE` | `D59` |       |       |       |       |       |       |       |
-| 5   |       | `422` |       |       | `432` |       |       |       |       |       | `CC8` | `8FA` |
-| 6   | `8A2` |       |       |       | `446` |       |       |       |       |       | `232` | `674` |
-| 7   | `D11` | `A63` | `772` | `6C3` | `1B1` | `D87` | `127` |       |       |       | `056` | `1E7` |
-| 8   |       |       |       |       | `AAC` |       |       |       |       |       | `FF7` | `55B` |
-| 9   |       |       |       |       |       |       |       |       |       |       |       |       |
-| 10  |       |       | `F9E` | `454` | `BCA` |       |       |       |       |       |       |       |
-| 11  |       |       | `9C1` | `D43` | `482` |       |       |       |       |       |       |       |
-| 12  |       |       | `A73` | `AC1` | `0B2` |       |       |       |       |       |       |       |
-| 13  |       |       | `A23` | `A7F` | `05C` |       |       |       |       |       |       |       |
-| 14  | `FEB` |       |       |       |       |       |       |       |       |       |       |       |
-
-Weights are additive in the byte value where the parts are known, e.g. `W(d, 0x3F)` equals
-`W(d, 0x07) XOR W(d, 0x38)`. The gaps are not oversights, they are values that never occur:
-`d = 9` is byte 7 of a mainboard frame, which stayed `00` across every captured state.
-
-#### Computing a checksum
+The last 2 bytes are a **CRC-16/CCITT over the whole message, header included**.
 
 ```
-checksum = K XOR (weight of every content byte at its distance from the end)
+polynomial   0x1021
+init         0xAAAA
+xorout       0x0000
+input        8 bit, most significant bit first, not reflected
+output       not reflected
 ```
 
-For **mainboard to display** frames `K = E4D`, which is simply the checksum of the all-zero
-frame. Those frames can be computed outright.
-
-For **display to mainboard** commands `K` is not observable. It would be the checksum of a
-message whose machine identifier is `00 00 00 00`, and no such machine exists, so `K` and the
-weights of bytes 3-6 only ever appear added together. One captured message from the machine
-pins that sum, and from there its whole command set follows:
+The 16 bit result is sent as two 6 bit values, low byte first, each carrying the top six bits of
+its byte:
 
 ```
-checksum(new) = checksum(anchor) XOR W(d, new[d]) XOR W(d, anchor[d])   for every byte that differs
+byte[n-2] = (crc & 0xFF) >> 2
+byte[n-1] = (crc >> 8) >> 2
 ```
 
-A status request (`D5 55 00 <machine> 00 00 00 <checksum>`) is the easiest anchor, since the
-display sends it continuously while the machine is on.
+Four bits are simply thrown away. That fits the rest of the protocol, where every payload byte is
+6 bit as well.
 
-#### How well this is established
+The same parameters cover **both directions and every machine**. There is no per-machine or
+per-length constant, so any message can be computed outright, including ones nobody has captured:
+commands for an unknown machine, several buttons pressed at once, LED states that have never been
+recorded.
 
-The model was fitted over 143 messages: 81 distinct mainboard frames and 10 display commands
-captured on an EP2231 for this fork, plus every checksummed message that could be harvested
-from the upstream repository and its issue tracker, covering 8 machines. The system has 44
-degrees of freedom, so **99 of those messages are redundant** — they had to come out right and
-did.
-
-Exactly two messages contradict everything else:
-
+```python
+def checksum(message):
+    # message without its two checksum bytes; returns them as a tuple
+    crc = 0xAAAA
+    for byte in message:
+        crc ^= byte << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x1021) & 0xFFFF if crc & 0x8000 else (crc << 1) & 0xFFFF
+    return (crc & 0xFF) >> 2, (crc >> 8) >> 2
 ```
-D5 55 0A 01 04 02 04 00 00 00 2A 10   upstream issue #36
-D5 55 01 01 04 02 04 00 00 00 01 25   upstream issue #36
-```
 
-Their checksums are byte-identical to the `01 03 00 0E` values for the same instruction, so
-these are almost certainly machine bytes and a checksum taken from different messages. They are
-kept in [captures.csv](captures.csv) with a note rather than silently dropped.
+The status request of a hypothetical machine whose identifier is all zeros is
+`D5 55 00 00 00 00 00 00 00 00 03 01`, which is a convenient way to check an implementation.
 
-Two blind tests:
+#### Evidence
 
-- Fitted on one capture session, then asked to predict a later one: 7 of 9 new frames predicted
-  exactly. The other 2 were the first frames ever seen with the pre-ground-coffee LED, a bit
-  combination outside the fitted span — the model reported them as not computable instead of
-  guessing wrong.
-- Each machine removed from the training set entirely and handed back a **single** captured
-  message as anchor, then asked for the rest of its command set: **52 of 52 correct, none
-  wrong**, across 6 machines.
+Reproduces **145 of 145** messages in [captures.csv](captures.csv) exactly: both directions, all 8
+machine identifiers, one set of parameters. The two remaining rows are flagged in that file as
+carrying a wrong checksum, and the CRC gives the value each of them should have had.
 
-#### It is not a CRC
+The parameters were pinned by an exhaustive search over all polynomials for CRC-6 through CRC-16,
+symbol widths 6, 7, 8 and 10, both bit orders, allowing any linear map from the register onto the
+12 transmitted bits. Exactly one candidate survives.
 
-Worth recording so nobody repeats the search. If the checksum were any 12-bit CRC or LFSR, the
-contribution of message bit `b` at byte position `p` would be `x^(offset + w*p + b) mod g`, up
-to a fixed invertible output map — and that map absorbs bit order, byte packing, reflection,
-init value and final XOR. So the test is: compute the raw polynomial value per message, then ask
-whether one single matrix maps all of them onto the measured checksums.
+#### A warning to the next person
 
-Searched exhaustively: all 4096 polynomials, 6 and 8 bits per symbol, both bit orders, both byte
-orders. **No candidate survives.** The same search run against synthetic data from a real CRC-12
-recovers its polynomial uniquely, so this is a real negative and not a broken search.
+An earlier version of this document claimed the checksum was not a CRC. That was wrong, and the
+way it went wrong is worth recording.
 
-The weaker model "12-bit register, `reg = T*reg XOR V(byte)` per byte" fails too: no single `T`
-is compatible with the weight table.
+The observable behaviour really is that of a 12 bit linear function: flipping a message bit always
+flips the same checksum bits, and the effect of a byte depends on its distance from the end of the
+message rather than its offset from the start. Fitting that model works and reproduces every
+captured message. But a search for a CRC that assumes a 12 bit register cannot find this one,
+because the register is 16 bits and 4 of them are discarded on the way out. No 12 bit model can
+represent that projection, so every candidate fails and the search comes back empty.
 
-What remains is a hard-wired weight matrix, and the table above is all there is to know about it.
-
-The messages listed below were captured on an EP2220.
+If you are fitting a linear model to a checksum, the width of the register is not the width of the
+field on the wire.
 
 ### Power on message
 
@@ -224,9 +174,7 @@ The 9th byte is used to transmit the right hand side button group in a similar f
 
 ### Encoding simultaneous button presses
 
-Possible: set both button bits and compute the checksum with the model described above. Both
-bits sit at distances 1 and 2, where every single-bit weight is known, so the checksum follows
-without a new capture. Untested on hardware.
+Possible: set both button bits and compute the checksum. Untested on hardware.
 
 ## EP2231 command set
 

@@ -57,9 +57,9 @@ display->mainboard,01 03 00 12,EP3241,D5 55 00 01 03 00 12 08 00 00 38 0B,upstre
 display->mainboard,01 03 00 12,EP3241,D5 55 00 01 03 00 12 10 00 00 08 31,upstream issue #44,
 display->mainboard,01 03 00 12,EP3241,D5 55 00 01 03 00 12 20 00 00 21 00,upstream issue #44,
 display->mainboard,01 04 02 04,EP3221,D5 55 00 01 04 02 04 00 00 00 2F 0D,upstream issue #40,
-display->mainboard,01 04 02 04,EP3221,D5 55 01 01 04 02 04 00 00 00 01 25,upstream issue #36,inconsistent with every other message; checksum belongs to 01 03 00 0E
+display->mainboard,01 04 02 04,EP3221,D5 55 01 01 04 02 04 00 00 00 01 25,upstream issue #36,"wrong checksum, does not match the CRC; correct value is 1B 1C"
 display->mainboard,01 04 02 04,EP3221,D5 55 01 01 04 02 04 00 00 00 1B 1C,upstream issue #36,
-display->mainboard,01 04 02 04,EP3221,D5 55 0A 01 04 02 04 00 00 00 2A 10,upstream issue #36,inconsistent with every other message; checksum belongs to 01 03 00 0E
+display->mainboard,01 04 02 04,EP3221,D5 55 0A 01 04 02 04 00 00 00 2A 10,upstream issue #36,"wrong checksum, does not match the CRC; correct value is 30 29"
 display->mainboard,01 04 02 04,EP3221,D5 55 0A 01 04 02 04 00 00 00 30 29,upstream issue #36,
 mainboard->display,,,D5 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 39 0D,"this fork, captured",
 mainboard->display,,,D5 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 07 00 11,"this fork, captured",
@@ -106,6 +106,8 @@ mainboard->display,,,D5 55 00 00 00 07 00 00 3F 07 38 07 00 00 00 00 00 20 25,"t
 mainboard->display,,,D5 55 00 00 00 07 00 00 3F 07 38 07 00 00 00 00 07 19 39,"this fork, captured",
 mainboard->display,,,D5 55 00 00 00 07 00 00 3F 07 3F 07 00 00 00 00 00 31 23,"this fork, captured",
 mainboard->display,,,D5 55 00 00 00 07 00 00 3F 07 3F 07 00 00 00 00 07 08 3F,"this fork, captured",
+mainboard->display,,,D5 55 00 00 00 38 00 00 38 07 38 07 00 00 00 00 00 0E 1B,"this fork, captured",
+mainboard->display,,,D5 55 00 00 00 38 00 00 38 07 38 07 00 00 00 00 07 37 07,"this fork, captured",
 mainboard->display,,,D5 55 00 00 07 00 00 00 00 00 00 00 00 00 00 00 00 3B 3F,"this fork, captured",
 mainboard->display,,,D5 55 00 00 07 00 00 00 00 00 00 00 00 00 00 00 07 02 23,"this fork, captured",
 mainboard->display,,,D5 55 00 00 07 00 00 00 00 00 00 07 00 00 00 00 00 2B 0D,"this fork, captured",
@@ -141,4 +143,6 @@ mainboard->display,,,D5 55 00 07 00 00 00 00 3F 07 3F 07 00 00 00 00 07 1B 21,"t
 mainboard->display,,,D5 55 00 07 03 00 00 00 00 00 00 00 00 00 00 00 00 11 22,"this fork, captured",
 mainboard->display,,,D5 55 00 07 03 00 00 00 00 00 00 00 00 00 00 00 07 28 3E,"this fork, captured",
 mainboard->display,,,D5 55 00 07 07 07 07 00 00 00 00 00 07 00 00 00 00 32 32,"this fork, captured",
+mainboard->display,,,D5 55 00 38 00 00 00 00 38 07 38 07 00 00 00 00 00 0C 27,"this fork, captured",
+mainboard->display,,,D5 55 00 38 00 00 00 00 38 07 38 07 00 00 00 00 07 35 3B,"this fork, captured",
 mainboard->display,,,D5 55 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 06 26,"this fork, captured",
