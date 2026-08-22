@@ -9,7 +9,7 @@
 
 An ESP is spliced into the ribbon cable between the machine's mainboard and its display unit, where it can read, drop and inject messages. That gives Home Assistant a power switch, the machine status, the bean/size settings, and buttons for every front-panel key.
 
-![Provided entities in HomeAssistant](ha_entities.png)
+![The controls in Home Assistant](ha_entities.png)
 
 > [!WARNING]
 > Opening the machine voids the warranty, and you might break or brick it. Do this at your own risk.
