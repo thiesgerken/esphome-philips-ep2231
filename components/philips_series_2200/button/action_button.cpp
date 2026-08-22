@@ -12,17 +12,23 @@ void ActionButton::dump_config() {
 }
 
 void ActionButton::write_array(const std::vector<uint8_t> &data) {
-  for (unsigned int i = 0; i <= MESSAGE_REPETITIONS; i++)
-    mainboard_uart_->write_array(data);
+  // One message per repetition tick, the way the display does it
+  mainboard_uart_->write_array(data);
   mainboard_uart_->flush();
 }
 
 void ActionButton::loop() {
-  if (!should_long_press_ || millis() - press_start_ > LONG_PRESS_DURATION) {
+  uint32_t duration =
+      should_long_press_ ? LONG_PRESS_DURATION : SHORT_PRESS_DURATION;
+
+  if (millis() - press_start_ > duration) {
     is_long_pressing_ = false;
     return;
   }
 
+  // Hold back the display for the duration of either kind of press: while a
+  // button is down the display sends presses, not status requests, and letting
+  // those through mid-press is what a real press never looks like.
   is_long_pressing_ = true;
   if (millis() - last_message_sent_ > LONG_PRESS_REPETITION_DELAY) {
     last_message_sent_ = millis();
@@ -46,13 +52,8 @@ void ActionButton::press_action() {
     return;
   }
 
-  if (should_long_press_) {
-    press_start_ = millis();
-    last_message_sent_ = 0;
-    return;
-  }
-
-  perform_action();
+  press_start_ = millis();
+  last_message_sent_ = 0;
 }
 
 void ActionButton::perform_action() {

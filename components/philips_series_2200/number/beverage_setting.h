@@ -9,6 +9,9 @@
 // The machine needs a moment to apply a press and report the new level back,
 // so wait for that before pressing again.
 #define SETTINGS_BUTTON_SEQUENCE_DELAY 500
+// Mainboard frames arrive at roughly 12 per second, so two of them hold the
+// button for about as long as the display does.
+#define PRESS_FRAMES 2
 
 namespace esphome {
 namespace philips_series_2200 {
@@ -63,6 +66,8 @@ private:
 
   /// @brief level the user asked for, -1 if there is nothing to do
   int8_t target_amount_ = -1;
+  /// @brief mainboard frames left in the press currently being sent
+  uint8_t frames_left_ = 0;
 
   /// @brief time at which the last button press was sent
   uint32_t last_transmission_ = 0;

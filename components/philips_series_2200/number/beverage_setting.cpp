@@ -43,15 +43,23 @@ void BeverageSetting::update_status(uint8_t *data, size_t len) {
     return;
   }
 
-  if (millis() - last_transmission_ <= SETTINGS_BUTTON_SEQUENCE_DELAY)
-    return;
+  // A press has to look the way the display makes one: a couple of messages
+  // spread over about a tenth of a second. A burst reads as a bouncing button
+  // and the mainboard locks that button out, including for the physical one.
+  // This runs once per mainboard frame, so counting frames gives the cadence.
+  if (frames_left_ == 0) {
+    if (millis() - last_transmission_ <= SETTINGS_BUTTON_SEQUENCE_DELAY)
+      return;
+
+    frames_left_ = PRESS_FRAMES;
+    last_transmission_ = millis();
+  }
 
   // the button cycles through the levels, so press until the target comes up
-  for (unsigned int i = 0; i <= MESSAGE_REPETITIONS; i++)
-    mainboard_uart_->write_array(type_ == Type::BEAN ? command_press_beans
-                                                     : command_press_size);
+  frames_left_--;
+  mainboard_uart_->write_array(type_ == Type::BEAN ? command_press_beans
+                                                   : command_press_size);
   mainboard_uart_->flush();
-  last_transmission_ = millis();
 }
 
 } // namespace philips_beverage_setting
