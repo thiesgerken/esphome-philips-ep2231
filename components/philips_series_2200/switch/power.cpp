@@ -9,7 +9,15 @@ static const char *TAG = "philips_power_switch";
 
 void Power::setup() {}
 
-void Power::loop() {}
+void Power::loop() {
+  // Restoring the pin from here rather than blocking in write_state: the uart
+  // bridging runs in the same loop, so blocking dropped every mainboard message
+  // for the duration of the trip.
+  if (tripping_ && millis() - trip_start_ >= POWER_TRIP_DELAY) {
+    power_pin_->digital_write(1);
+    tripping_ = false;
+  }
+}
 
 void Power::write_state(bool state) {
   if (state) {
@@ -22,9 +30,11 @@ void Power::write_state(bool state) {
 
     mainboard_uart_->flush();
 
+    // The display does not notice an injected power on, so reboot it by
+    // cutting its power briefly. Completed in loop().
     power_pin_->digital_write(0);
-    delay(POWER_TRIP_DELAY);
-    power_pin_->digital_write(1);
+    trip_start_ = millis();
+    tripping_ = true;
   } else {
     for (unsigned int i = 0; i <= MESSAGE_REPETITIONS; i++)
       mainboard_uart_->write_array(command_power_off);

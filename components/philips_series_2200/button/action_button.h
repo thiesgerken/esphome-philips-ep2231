@@ -6,7 +6,6 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 
-#define BUTTON_SEQUENCE_DELAY 100
 #define LONG_PRESS_REPETITION_DELAY 50
 #define LONG_PRESS_DURATION 3500
 
