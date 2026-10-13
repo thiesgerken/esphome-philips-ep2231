@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "esphome_philips_ep2231"}]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<3.15"
+python = ">=3.15,<3.16"
 esphome = ">=2026.8.0"
 
 [tool.poetry.group.dev.dependencies]
